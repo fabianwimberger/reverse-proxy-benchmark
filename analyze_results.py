@@ -8,6 +8,7 @@ from collections import defaultdict
 try:
     import numpy as np
     import matplotlib.pyplot as plt
+    from matplotlib import colormaps
     plt.rcParams.update({"figure.max_open_warning": 0})
     HAS_PLOT = True
 except ImportError:
@@ -120,104 +121,155 @@ if HAS_PLOT:
     pxs = sorted(data.keys())
     scs = sorted(set(s for p in data.values() for s in p.keys()))
 
-    fig, (a1, a2, a3) = plt.subplots(1, 3, figsize=(18, 6))
-    fig.suptitle("Reverse Proxy Performance", fontsize=16, fontweight="bold")
+    fig = plt.figure(figsize=(18, 11))
+    gs = fig.add_gridspec(2, 2, hspace=0.35, wspace=0.3, top=0.93, bottom=0.07, left=0.06, right=0.96)
+
+    a1 = fig.add_subplot(gs[0, 0])
+    a2 = fig.add_subplot(gs[0, 1])
+    a3 = fig.add_subplot(gs[1, 0])
+    a4 = fig.add_subplot(gs[1, 1])
+
+    fig.suptitle("Reverse Proxy Performance Comparison", fontsize=18)
 
     x = np.arange(len(scs))
     w = 0.25
-    c = ["#2ecc71", "#3498db", "#e74c3c"]
-    c_err = ["#ffcccc", "#cce5ff", "#ffe5cc"]
 
-    max_val = 0
+    cmap = colormaps['tab10']
+    c = [cmap(i / len(pxs)) for i in range(len(pxs))]
+
     for i, px in enumerate(pxs):
         vals = [data[px].get(s, {}).get("rps", 0) for s in scs]
-        max_val = max(max_val, max(vals)) if vals else max_val
-        bars = a1.bar(x + w * (i - 1), vals, w, label=px, color=c[i])
-        for bar in bars:
+        errs = [data[px].get(s, {}).get("err", 0) for s in scs]
+        tots = [data[px].get(s, {}).get("tot", 1) for s in scs]
+        err_pcts = [(e/t*100) if t > 0 else 0 for e, t in zip(errs, tots)]
+
+        bars = a1.bar(x + w * (i - 1), vals, w, label=px.capitalize(),
+                      color=c[i])
+
+        for j, bar in enumerate(bars):
             if bar.get_height() > 0:
-                a1.text(
-                    bar.get_x() + bar.get_width() / 2,
-                    bar.get_height(),
-                    f"{bar.get_height():.0f}",
-                    ha="center",
-                    va="bottom",
-                    fontsize=5,
-                )
+                label = f"{bar.get_height():.0f}"
+                a1.text(bar.get_x() + bar.get_width() / 2, bar.get_height(),
+                        label, ha="center", va="bottom", fontsize=7)
 
-    a1.set_xlabel("Scenario", fontweight="bold")
-    a1.set_ylabel("Requests/s", fontweight="bold")
-    a1.set_title("Throughput (Req/s)", fontsize=12, fontweight="bold")
+    a1.set_xlabel("Scenario")
+    a1.set_ylabel("Requests/s")
+    a1.set_title("Throughput (Requests/sec)", fontsize=14, pad=15)
     a1.set_xticks(x)
-    a1.set_xticklabels([s.replace("_", "\n") for s in scs], fontsize=9)
+    a1.set_xticklabels([s.replace("_", "\n") for s in scs])
     a1.set_yscale('log')
-    from matplotlib.patches import Patch
-    legend_elements = [Patch(facecolor=c[i], label=pxs[i]) for i in range(len(pxs))]
-    a1.legend(handles=legend_elements, fontsize=8, bbox_to_anchor=(1.05, 1), loc='upper left')
-    a1.grid(axis="y", alpha=0.3)
+    a1.legend()
+    a1.grid(axis="y", alpha=0.5, linestyle='--')
 
-    max_tx = 0
     for i, px in enumerate(pxs):
         vals = [data[px].get(s, {}).get("tx", 0) for s in scs]
-        max_tx = max(max_tx, max(vals)) if vals else max_tx
-        bars = a2.bar(x + w * (i - 1), vals, w, label=px, color=c[i])
-        for bar in bars:
+        errs = [data[px].get(s, {}).get("err", 0) for s in scs]
+        tots = [data[px].get(s, {}).get("tot", 1) for s in scs]
+        err_pcts = [(e/t*100) if t > 0 else 0 for e, t in zip(errs, tots)]
+
+        bars = a2.bar(x + w * (i - 1), vals, w, label=px.capitalize(),
+                      color=c[i])
+
+        for j, bar in enumerate(bars):
             if bar.get_height() > 0:
-                a2.text(
-                    bar.get_x() + bar.get_width() / 2,
-                    bar.get_height(),
-                    f"{bar.get_height():.0f}",
-                    ha="center",
-                    va="bottom",
-                    fontsize=5,
-                )
+                label = f"{bar.get_height():.0f}"
+                a2.text(bar.get_x() + bar.get_width() / 2, bar.get_height(),
+                        label, ha="center", va="bottom", fontsize=7)
 
-    a2.set_xlabel("Scenario", fontweight="bold")
-    a2.set_ylabel("MB/s", fontweight="bold")
-    a2.set_title("Throughput (MB/s)", fontsize=12, fontweight="bold")
+    a2.set_xlabel("Scenario")
+    a2.set_ylabel("MB/s")
+    a2.set_title("Throughput (MB/sec)", fontsize=14, pad=15)
     a2.set_xticks(x)
-    a2.set_xticklabels([s.replace("_", "\n") for s in scs], fontsize=9)
+    a2.set_xticklabels([s.replace("_", "\n") for s in scs])
     a2.set_yscale('log')
-    a2.legend(fontsize=8, bbox_to_anchor=(1.05, 1), loc='upper left')
-    a2.grid(axis="y", alpha=0.3)
+    a2.legend()
+    a2.grid(axis="y", alpha=0.5, linestyle='--')
 
-    max_lat = 0
     for i, px in enumerate(pxs):
         lats = [data[px].get(s, {}).get("lat", 0) for s in scs]
         stds = [data[px].get(s, {}).get("std", 0) for s in scs]
-        max_lat = max(max_lat, max([lat + std for lat, std in zip(lats, stds)])) if lats else max_lat
         yerr_lower = [min(lat, std) for lat, std in zip(lats, stds)]
         yerr_upper = stds
-        bars = a3.bar(x + w * (i - 1), lats, w, yerr=[yerr_lower, yerr_upper], capsize=3, label=px, color=c[i])
+
+        bars = a3.bar(x + w * (i - 1), lats, w, yerr=[yerr_lower, yerr_upper],
+                      label=px.capitalize(), color=c[i])
+
         for j, bar in enumerate(bars):
             if bar.get_height() > 0:
-                a3.text(
-                    bar.get_x() + bar.get_width() / 2,
-                    bar.get_height() + stds[j],
-                    f"{bar.get_height():.2f}",
-                    ha="center",
-                    va="bottom",
-                    fontsize=5,
-                )
+                a3.text(bar.get_x() + bar.get_width() / 2,
+                        bar.get_height() + stds[j],
+                        f"{bar.get_height():.1f}", ha="center", va="bottom",
+                        fontsize=7)
 
-    a3.set_xlabel("Scenario", fontweight="bold")
-    a3.set_ylabel("Latency (ms)", fontweight="bold")
-    a3.set_title("Latency ±σ", fontsize=12, fontweight="bold")
+    a3.set_xlabel("Scenario")
+    a3.set_ylabel("Latency (ms)")
+    aNT = "Average Latency with Standard Deviation"
+    a3.set_title(aNT, fontsize=14, pad=15)
     a3.set_xticks(x)
-    a3.set_xticklabels([s.replace("_", "\n") for s in scs], fontsize=9)
+    a3.set_xticklabels([s.replace("_", "\n") for s in scs])
     a3.set_yscale('log')
-    a3.legend(fontsize=8, bbox_to_anchor=(1.05, 1), loc='upper left')
-    a3.grid(axis="y", alpha=0.3)
+    a3.legend()
+    a3.grid(axis="y", alpha=0.5, linestyle='--')
 
-    plt.subplots_adjust(top=0.96)
-    plt.tight_layout()
+    for i, px in enumerate(pxs):
+        errs = [data[px].get(s, {}).get("err", 0) for s in scs]
+        tots = [data[px].get(s, {}).get("tot", 1) for s in scs]
+        err_pcts = [(e/t*100) if t > 0 else 0 for e, t in zip(errs, tots)]
+
+        bars = a4.bar(x + w * (i - 1), err_pcts, w, label=px.capitalize(),
+                      color=c[i])
+
+        for j, bar in enumerate(bars):
+            height = bar.get_height()
+            if height > 0.01:
+                if height >= 1:
+                    label = f"{height:.1f}%"
+                elif height >= 0.01:
+                    label = f"{height:.2f}%"
+                else:
+                    label = f"{height:.3f}%"
+
+                a4.text(bar.get_x() + bar.get_width() / 2, height,
+                        label, ha="center", va="bottom", fontsize=7)
+
+    a4.set_xlabel("Scenario")
+    a4.set_ylabel("Error Rate (%)")
+    a4.set_title("Error Rate (% of Failed Requests)", fontsize=14, pad=15)
+    a4.set_xticks(x)
+    a4.set_xticklabels([s.replace("_", "\n") for s in scs])
+
+    all_err_pcts = []
+    for px in pxs:
+        for s in scs:
+            err = data[px].get(s, {}).get("err", 0)
+            tot = data[px].get(s, {}).get("tot", 1)
+            if tot > 0:
+                all_err_pcts.append((err/tot*100))
+
+    if all_err_pcts:
+        max_err = max(all_err_pcts)
+        min_pos_err = min([p for p in all_err_pcts if p > 0] or [1])
+
+        if max_err > 0 and min_pos_err / max_err < 0.01:
+            a4.set_yscale('log')
+            a4.set_ylim(bottom=0.001)
+        else:
+            a4.set_ylim(bottom=0)
+    else:
+        a4.set_ylim(bottom=0)
+
+
+    a4.legend()
+    a4.grid(axis="y", alpha=0.5, linestyle='--')
+
     chart_file = os.path.join(chart_dir, f"summary_{timestamp}.png")
-    plt.savefig(chart_file, dpi=150, bbox_inches="tight")
+    plt.savefig(chart_file, dpi=120, bbox_inches="tight")
     try:
         os.chmod(chart_file, 0o777)
         os.chmod(chart_dir, 0o777)
     except PermissionError:
         pass
-    print(f"\n✓ Chart: ./results/charts/summary_{timestamp}.png")
+    print(f"\n✓ Simplified Chart: ./results/charts/summary_{timestamp}.png")
 
 error_types_found = set()
 for px in data.values():
