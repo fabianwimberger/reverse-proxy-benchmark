@@ -1,0 +1,13 @@
+{
+    auto_https off
+    admin off
+}
+
+:81 {
+    reverse_proxy http://backend:8080
+}
+
+:444 {
+    tls /etc/caddy/ssl/cert.pem /etc/caddy/ssl/key.pem
+    reverse_proxy http://backend:8080
+}

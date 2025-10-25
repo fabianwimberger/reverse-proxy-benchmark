@@ -1,0 +1,614 @@
+{
+  "data": {
+    "message": "This is a benchmark payload for reverse proxy performance testing",
+    "timestamp": 1234567890,
+    "items": [
+      {
+        "id": 1,
+        "name": "Item 1",
+        "value": 100,
+        "description": "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim"
+      },
+      {
+        "id": 2,
+        "name": "Item 2",
+        "value": 200,
+        "description": "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip"
+      },
+      {
+        "id": 3,
+        "name": "Item 3",
+        "value": 300,
+        "description": "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat"
+      },
+      {
+        "id": 4,
+        "name": "Item 4",
+        "value": 400,
+        "description": "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt"
+      },
+      {
+        "id": 5,
+        "name": "Item 5",
+        "value": 500,
+        "description": "Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil"
+      },
+      {
+        "id": 6,
+        "name": "Item 6",
+        "value": 600,
+        "description": "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium"
+      },
+      {
+        "id": 7,
+        "name": "Item 7",
+        "value": 700,
+        "description": "Et harum quidem rerum facilis est et expedita distinctio nam libero tempore cum soluta"
+      },
+      {
+        "id": 8,
+        "name": "Item 8",
+        "value": 800,
+        "description": "Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus"
+      },
+      {
+        "id": 9,
+        "name": "Item 9",
+        "value": 900,
+        "description": "Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet"
+      },
+      {
+        "id": 10,
+        "name": "Item 10",
+        "value": 1000,
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor"
+      },
+      {
+        "id": 11,
+        "name": "Item 11",
+        "value": 1100,
+        "description": "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim"
+      },
+      {
+        "id": 12,
+        "name": "Item 12",
+        "value": 1200,
+        "description": "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip"
+      },
+      {
+        "id": 13,
+        "name": "Item 13",
+        "value": 1300,
+        "description": "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat"
+      },
+      {
+        "id": 14,
+        "name": "Item 14",
+        "value": 1400,
+        "description": "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt"
+      },
+      {
+        "id": 15,
+        "name": "Item 15",
+        "value": 1500,
+        "description": "Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil"
+      },
+      {
+        "id": 16,
+        "name": "Item 16",
+        "value": 1600,
+        "description": "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium"
+      },
+      {
+        "id": 17,
+        "name": "Item 17",
+        "value": 1700,
+        "description": "Et harum quidem rerum facilis est et expedita distinctio nam libero tempore cum soluta"
+      },
+      {
+        "id": 18,
+        "name": "Item 18",
+        "value": 1800,
+        "description": "Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus"
+      },
+      {
+        "id": 19,
+        "name": "Item 19",
+        "value": 1900,
+        "description": "Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet"
+      },
+      {
+        "id": 20,
+        "name": "Item 20",
+        "value": 2000,
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor"
+      },
+      {
+        "id": 21,
+        "name": "Item 21",
+        "value": 2100,
+        "description": "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim"
+      },
+      {
+        "id": 22,
+        "name": "Item 22",
+        "value": 2200,
+        "description": "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip"
+      },
+      {
+        "id": 23,
+        "name": "Item 23",
+        "value": 2300,
+        "description": "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat"
+      },
+      {
+        "id": 24,
+        "name": "Item 24",
+        "value": 2400,
+        "description": "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt"
+      },
+      {
+        "id": 25,
+        "name": "Item 25",
+        "value": 2500,
+        "description": "Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil"
+      },
+      {
+        "id": 26,
+        "name": "Item 26",
+        "value": 2600,
+        "description": "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium"
+      },
+      {
+        "id": 27,
+        "name": "Item 27",
+        "value": 2700,
+        "description": "Et harum quidem rerum facilis est et expedita distinctio nam libero tempore cum soluta"
+      },
+      {
+        "id": 28,
+        "name": "Item 28",
+        "value": 2800,
+        "description": "Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus"
+      },
+      {
+        "id": 29,
+        "name": "Item 29",
+        "value": 2900,
+        "description": "Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet"
+      },
+      {
+        "id": 30,
+        "name": "Item 30",
+        "value": 3000,
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor"
+      },
+      {
+        "id": 31,
+        "name": "Item 31",
+        "value": 3100,
+        "description": "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim"
+      },
+      {
+        "id": 32,
+        "name": "Item 32",
+        "value": 3200,
+        "description": "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip"
+      },
+      {
+        "id": 33,
+        "name": "Item 33",
+        "value": 3300,
+        "description": "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat"
+      },
+      {
+        "id": 34,
+        "name": "Item 34",
+        "value": 3400,
+        "description": "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt"
+      },
+      {
+        "id": 35,
+        "name": "Item 35",
+        "value": 3500,
+        "description": "Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil"
+      },
+      {
+        "id": 36,
+        "name": "Item 36",
+        "value": 3600,
+        "description": "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium"
+      },
+      {
+        "id": 37,
+        "name": "Item 37",
+        "value": 3700,
+        "description": "Et harum quidem rerum facilis est et expedita distinctio nam libero tempore cum soluta"
+      },
+      {
+        "id": 38,
+        "name": "Item 38",
+        "value": 3800,
+        "description": "Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus"
+      },
+      {
+        "id": 39,
+        "name": "Item 39",
+        "value": 3900,
+        "description": "Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet"
+      },
+      {
+        "id": 40,
+        "name": "Item 40",
+        "value": 4000,
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor"
+      },
+      {
+        "id": 41,
+        "name": "Item 41",
+        "value": 4100,
+        "description": "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim"
+      },
+      {
+        "id": 42,
+        "name": "Item 42",
+        "value": 4200,
+        "description": "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip"
+      },
+      {
+        "id": 43,
+        "name": "Item 43",
+        "value": 4300,
+        "description": "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat"
+      },
+      {
+        "id": 44,
+        "name": "Item 44",
+        "value": 4400,
+        "description": "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt"
+      },
+      {
+        "id": 45,
+        "name": "Item 45",
+        "value": 4500,
+        "description": "Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil"
+      },
+      {
+        "id": 46,
+        "name": "Item 46",
+        "value": 4600,
+        "description": "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium"
+      },
+      {
+        "id": 47,
+        "name": "Item 47",
+        "value": 4700,
+        "description": "Et harum quidem rerum facilis est et expedita distinctio nam libero tempore cum soluta"
+      },
+      {
+        "id": 48,
+        "name": "Item 48",
+        "value": 4800,
+        "description": "Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus"
+      },
+      {
+        "id": 49,
+        "name": "Item 49",
+        "value": 4900,
+        "description": "Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet"
+      },
+      {
+        "id": 50,
+        "name": "Item 50",
+        "value": 5000,
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor"
+      },
+      {
+        "id": 51,
+        "name": "Item 51",
+        "value": 5100,
+        "description": "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim"
+      },
+      {
+        "id": 52,
+        "name": "Item 52",
+        "value": 5200,
+        "description": "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip"
+      },
+      {
+        "id": 53,
+        "name": "Item 53",
+        "value": 5300,
+        "description": "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat"
+      },
+      {
+        "id": 54,
+        "name": "Item 54",
+        "value": 5400,
+        "description": "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt"
+      },
+      {
+        "id": 55,
+        "name": "Item 55",
+        "value": 5500,
+        "description": "Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil"
+      },
+      {
+        "id": 56,
+        "name": "Item 56",
+        "value": 5600,
+        "description": "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium"
+      },
+      {
+        "id": 57,
+        "name": "Item 57",
+        "value": 5700,
+        "description": "Et harum quidem rerum facilis est et expedita distinctio nam libero tempore cum soluta"
+      },
+      {
+        "id": 58,
+        "name": "Item 58",
+        "value": 5800,
+        "description": "Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus"
+      },
+      {
+        "id": 59,
+        "name": "Item 59",
+        "value": 5900,
+        "description": "Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet"
+      },
+      {
+        "id": 60,
+        "name": "Item 60",
+        "value": 6000,
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor"
+      },
+      {
+        "id": 61,
+        "name": "Item 61",
+        "value": 6100,
+        "description": "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim"
+      },
+      {
+        "id": 62,
+        "name": "Item 62",
+        "value": 6200,
+        "description": "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip"
+      },
+      {
+        "id": 63,
+        "name": "Item 63",
+        "value": 6300,
+        "description": "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat"
+      },
+      {
+        "id": 64,
+        "name": "Item 64",
+        "value": 6400,
+        "description": "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt"
+      },
+      {
+        "id": 65,
+        "name": "Item 65",
+        "value": 6500,
+        "description": "Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil"
+      },
+      {
+        "id": 66,
+        "name": "Item 66",
+        "value": 6600,
+        "description": "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium"
+      },
+      {
+        "id": 67,
+        "name": "Item 67",
+        "value": 6700,
+        "description": "Et harum quidem rerum facilis est et expedita distinctio nam libero tempore cum soluta"
+      },
+      {
+        "id": 68,
+        "name": "Item 68",
+        "value": 6800,
+        "description": "Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus"
+      },
+      {
+        "id": 69,
+        "name": "Item 69",
+        "value": 6900,
+        "description": "Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet"
+      },
+      {
+        "id": 70,
+        "name": "Item 70",
+        "value": 7000,
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor"
+      },
+      {
+        "id": 71,
+        "name": "Item 71",
+        "value": 7100,
+        "description": "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim"
+      },
+      {
+        "id": 72,
+        "name": "Item 72",
+        "value": 7200,
+        "description": "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip"
+      },
+      {
+        "id": 73,
+        "name": "Item 73",
+        "value": 7300,
+        "description": "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat"
+      },
+      {
+        "id": 74,
+        "name": "Item 74",
+        "value": 7400,
+        "description": "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt"
+      },
+      {
+        "id": 75,
+        "name": "Item 75",
+        "value": 7500,
+        "description": "Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil"
+      },
+      {
+        "id": 76,
+        "name": "Item 76",
+        "value": 7600,
+        "description": "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium"
+      },
+      {
+        "id": 77,
+        "name": "Item 77",
+        "value": 7700,
+        "description": "Et harum quidem rerum facilis est et expedita distinctio nam libero tempore cum soluta"
+      },
+      {
+        "id": 78,
+        "name": "Item 78",
+        "value": 7800,
+        "description": "Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus"
+      },
+      {
+        "id": 79,
+        "name": "Item 79",
+        "value": 7900,
+        "description": "Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet"
+      },
+      {
+        "id": 80,
+        "name": "Item 80",
+        "value": 8000,
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor"
+      },
+      {
+        "id": 81,
+        "name": "Item 81",
+        "value": 8100,
+        "description": "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim"
+      },
+      {
+        "id": 82,
+        "name": "Item 82",
+        "value": 8200,
+        "description": "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip"
+      },
+      {
+        "id": 83,
+        "name": "Item 83",
+        "value": 8300,
+        "description": "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat"
+      },
+      {
+        "id": 84,
+        "name": "Item 84",
+        "value": 8400,
+        "description": "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt"
+      },
+      {
+        "id": 85,
+        "name": "Item 85",
+        "value": 8500,
+        "description": "Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil"
+      },
+      {
+        "id": 86,
+        "name": "Item 86",
+        "value": 8600,
+        "description": "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium"
+      },
+      {
+        "id": 87,
+        "name": "Item 87",
+        "value": 8700,
+        "description": "Et harum quidem rerum facilis est et expedita distinctio nam libero tempore cum soluta"
+      },
+      {
+        "id": 88,
+        "name": "Item 88",
+        "value": 8800,
+        "description": "Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus"
+      },
+      {
+        "id": 89,
+        "name": "Item 89",
+        "value": 8900,
+        "description": "Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet"
+      },
+      {
+        "id": 90,
+        "name": "Item 90",
+        "value": 9000,
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor"
+      },
+      {
+        "id": 91,
+        "name": "Item 91",
+        "value": 9100,
+        "description": "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim"
+      },
+      {
+        "id": 92,
+        "name": "Item 92",
+        "value": 9200,
+        "description": "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip"
+      },
+      {
+        "id": 93,
+        "name": "Item 93",
+        "value": 9300,
+        "description": "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat"
+      },
+      {
+        "id": 94,
+        "name": "Item 94",
+        "value": 9400,
+        "description": "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt"
+      },
+      {
+        "id": 95,
+        "name": "Item 95",
+        "value": 9500,
+        "description": "Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil"
+      },
+      {
+        "id": 96,
+        "name": "Item 96",
+        "value": 9600,
+        "description": "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium"
+      },
+      {
+        "id": 97,
+        "name": "Item 97",
+        "value": 9700,
+        "description": "Et harum quidem rerum facilis est et expedita distinctio nam libero tempore cum soluta"
+      },
+      {
+        "id": 98,
+        "name": "Item 98",
+        "value": 9800,
+        "description": "Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus"
+      },
+      {
+        "id": 99,
+        "name": "Item 99",
+        "value": 9900,
+        "description": "Temporibus autem quibusdam et aut officiis debitis aut rerum necessitatibus saepe eveniet"
+      },
+      {
+        "id": 100,
+        "name": "Item 100",
+        "value": 10000,
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor"
+      }
+    ],
+    "metadata": {
+      "total_count": 100,
+      "page": 1,
+      "per_page": 100,
+      "has_more": false
+    }
+  }
+}

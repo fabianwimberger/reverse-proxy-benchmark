@@ -1,0 +1,17 @@
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+api:
+  dashboard: false
+
+entryPoints:
+  web:
+    address: ":82"
+  websecure:
+    address: ":445"
+
+providers:
+  file:
+    filename: /etc/traefik/dynamic.yml
+    watch: false
