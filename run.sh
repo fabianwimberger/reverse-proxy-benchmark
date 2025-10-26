@@ -58,7 +58,7 @@ for name in "${!tests[@]}"; do
   scenario=$(echo "$name" | cut -d_ -f2-)
 
   mkdir -p "/app/results/${proxy}"
-  cmd="rewrk -t4 -c20 -d30s --pct -h $url"
+  cmd="rewrk -t4 -c20 -d3s --pct -h $url"
   if [ "$use_http2" = "true" ]; then
     cmd="$cmd --http2"
   fi

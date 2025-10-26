@@ -35,7 +35,7 @@ Run the entire benchmark suite:
 This script will:
 1. Build containers and generate SSL certificates
 2. Start all proxy services and backend
-3. Run benchmarks using `rewrk` (30s duration, 4 threads, 20 connections)
+3. Run benchmarks using `rewrk` (3s duration, 4 threads, 20 connections)
 4. Analyze results and generate charts
 5. Display performance comparison tables
 6. Optionally stop containers when done
@@ -81,6 +81,8 @@ caddy           38000        0.52         15.30
 traefik         35000        0.57         18.20
 ```
 
+![Benchmark Results](results/charts/example.png)
+
 Charts are automatically generated showing:
 - Throughput comparison (requests/sec)
 - Transfer rates (MB/sec)
@@ -110,12 +112,12 @@ Charts are automatically generated showing:
 Edit `run.sh:62` to modify benchmark settings:
 
 ```bash
-rewrk -t4 -c20 -d30s --pct -h $url
+rewrk -t4 -c20 -d3s --pct -h $url
 ```
 
 - `-t4` - 4 threads
 - `-c20` - 20 concurrent connections
-- `-d30s` - 30 second duration
+- `-d3s` - 3 second duration
 
 ### Proxy Configurations
 
@@ -146,7 +148,7 @@ Run a single benchmark manually:
 
 ```bash
 docker compose exec test-runner bash
-rewrk -t4 -c20 -d30s --pct -h http://nginx:80/data.json
+rewrk -t4 -c20 -d3s --pct -h http://nginx:80/data.json
 ```
 
 Stop all services:
