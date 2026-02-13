@@ -34,7 +34,7 @@ services:
       - ssl_certs:/etc/traefik/ssl:ro
     networks: [app-network]
 
-  # Resource-constrained proxies (1 CPU core, 1GB memory)
+  # Resource-constrained proxies (2 CPU cores, 2GB memory)
   nginx_constrained:
     image: nginx:latest
     ports: ["9080:80", "9443:443"]

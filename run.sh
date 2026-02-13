@@ -1,6 +1,17 @@
 #!/bin/bash
 set -e
 
+# Benchmark configuration
+# These values control the load generation parameters for all tests
+# -t: number of threads (4)
+# -c: number of concurrent connections (20)  
+# -d: duration of the test (3s)
+# Chosen to provide quick but statistically meaningful results
+# Increase values for more intensive testing
+BENCHMARK_THREADS="${BENCHMARK_THREADS:-4}"
+BENCHMARK_CONNECTIONS="${BENCHMARK_CONNECTIONS:-20}"
+BENCHMARK_DURATION="${BENCHMARK_DURATION:-3s}"
+
 COMPOSE_FILE="$(dirname "$(readlink -f "$0")")/docker-compose.yml"
 
 echo "Building and generating SSL certificates..."
@@ -58,11 +69,15 @@ for name in "${!tests[@]}"; do
   scenario=$(echo "$name" | cut -d_ -f2-)
 
   mkdir -p "/app/results/${proxy}"
-  cmd="rewrk -t4 -c20 -d3s --pct -h $url"
+  cmd="rewrk -t${BENCHMARK_THREADS} -c${BENCHMARK_CONNECTIONS} -d${BENCHMARK_DURATION} --pct -h $url"
   if [ "$use_http2" = "true" ]; then
     cmd="$cmd --http2"
   fi
-  eval "$cmd" > "/app/results/${proxy}/${scenario}.txt" 2>&1 || true
+  
+  if ! eval "$cmd" > "/app/results/${proxy}/${scenario}.txt" 2>&1; then
+    echo "⚠ Warning: Benchmark failed for ${name} (${url})" >&2
+    echo "   Check /app/results/${proxy}/${scenario}.txt for details"
+  fi
 done
 EOF
 

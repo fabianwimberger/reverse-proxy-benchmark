@@ -5,6 +5,9 @@ import sys
 from datetime import datetime
 from collections import defaultdict
 
+# Analysis script for benchmark results
+# Parses rewrk/wrk output and generates comparison charts
+
 try:
     import numpy as np
     import matplotlib.pyplot as plt
