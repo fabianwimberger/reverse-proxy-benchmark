@@ -35,27 +35,31 @@ echo "Running benchmarks..."
 mkdir -p results
 docker compose -f "${COMPOSE_FILE}" exec -T test-runner bash -c "rm -rf /app/results/*" 2>/dev/null || true
 
-docker compose -f "${COMPOSE_FILE}" exec -T test-runner bash <<'EOF'
+docker compose -f "${COMPOSE_FILE}" exec -T \
+  -e BENCHMARK_THREADS="${BENCHMARK_THREADS}" \
+  -e BENCHMARK_CONNECTIONS="${BENCHMARK_CONNECTIONS}" \
+  -e BENCHMARK_DURATION="${BENCHMARK_DURATION}" \
+  test-runner bash <<'EOF'
 
 declare -A tests=(
   [nginx_http]="http://nginx:80/data.json false"
   [nginx_https]="https://nginx:443/data.json true false"
   [nginx_https_http2]="https://nginx:443/data.json true true"
-  [caddy_http]="http://caddy:81/data.json false"
-  [caddy_https]="https://caddy:444/data.json true false"
-  [caddy_https_http2]="https://caddy:444/data.json true true"
-  [traefik_http]="http://traefik:82/data.json false"
-  [traefik_https]="https://traefik:445/data.json true false"
-  [traefik_https_http2]="https://traefik:445/data.json true true"
+  [caddy_http]="http://caddy:80/data.json false"
+  [caddy_https]="https://caddy:443/data.json true false"
+  [caddy_https_http2]="https://caddy:443/data.json true true"
+  [traefik_http]="http://traefik:80/data.json false"
+  [traefik_https]="https://traefik:443/data.json true false"
+  [traefik_https_http2]="https://traefik:443/data.json true true"
   [nginx_constrained_http]="http://nginx_constrained:80/data.json false"
   [nginx_constrained_https]="https://nginx_constrained:443/data.json true false"
   [nginx_constrained_https_http2]="https://nginx_constrained:443/data.json true true"
-  [caddy_constrained_http]="http://caddy_constrained:81/data.json false"
-  [caddy_constrained_https]="https://caddy_constrained:444/data.json true false"
-  [caddy_constrained_https_http2]="https://caddy_constrained:444/data.json true true"
-  [traefik_constrained_http]="http://traefik_constrained:82/data.json false"
-  [traefik_constrained_https]="https://traefik_constrained:445/data.json true false"
-  [traefik_constrained_https_http2]="https://traefik_constrained:445/data.json true true"
+  [caddy_constrained_http]="http://caddy_constrained:80/data.json false"
+  [caddy_constrained_https]="https://caddy_constrained:443/data.json true false"
+  [caddy_constrained_https_http2]="https://caddy_constrained:443/data.json true true"
+  [traefik_constrained_http]="http://traefik_constrained:80/data.json false"
+  [traefik_constrained_https]="https://traefik_constrained:443/data.json true false"
+  [traefik_constrained_https_http2]="https://traefik_constrained:443/data.json true true"
 )
 
 sleep 10

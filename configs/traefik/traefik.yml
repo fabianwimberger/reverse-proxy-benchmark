@@ -7,9 +7,9 @@ api:
 
 entryPoints:
   web:
-    address: ":82"
+    address: ":80"
   websecure:
-    address: ":445"
+    address: ":443"
 
 providers:
   file:

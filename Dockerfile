@@ -27,7 +27,8 @@ RUN apt-get update -qq && \
 
 COPY --from=builder /usr/local/bin/rewrk /usr/local/bin/rewrk
 
-RUN pip install requests matplotlib numpy
+COPY requirements.txt /app/requirements.txt
+RUN pip install -r /app/requirements.txt
 
 WORKDIR /app
 

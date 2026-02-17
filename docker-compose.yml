@@ -8,7 +8,7 @@ services:
 
   nginx:
     image: nginx:latest
-    ports: ["80:80", "443:443"]
+    ports: ["18080:80", "18443:443"]
     volumes:
       - ./configs/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ssl_certs:/etc/nginx/ssl:ro
@@ -16,7 +16,7 @@ services:
 
   caddy:
     image: caddy:latest
-    ports: ["81:81", "444:444"]
+    ports: ["18081:80", "18444:443"]
     volumes:
       - ./configs/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - ssl_certs:/etc/caddy/ssl:ro
@@ -27,7 +27,7 @@ services:
   traefik:
     image: traefik:latest
     command: ["--configFile=/etc/traefik/traefik.yml"]
-    ports: ["82:82", "445:445"]
+    ports: ["18082:80", "18445:443"]
     volumes:
       - ./configs/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
       - ./configs/traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
@@ -37,7 +37,7 @@ services:
   # Resource-constrained proxies (2 CPU cores, 2GB memory)
   nginx_constrained:
     image: nginx:latest
-    ports: ["9080:80", "9443:443"]
+    ports: ["19080:80", "19443:443"]
     volumes:
       - ./configs/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ssl_certs:/etc/nginx/ssl:ro
@@ -53,7 +53,7 @@ services:
 
   caddy_constrained:
     image: caddy:latest
-    ports: ["9081:81", "9444:444"]
+    ports: ["19081:80", "19444:443"]
     volumes:
       - ./configs/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - ssl_certs:/etc/caddy/ssl:ro
@@ -72,7 +72,7 @@ services:
   traefik_constrained:
     image: traefik:latest
     command: ["--configFile=/etc/traefik/traefik.yml"]
-    ports: ["9082:82", "9445:445"]
+    ports: ["19082:80", "19445:443"]
     volumes:
       - ./configs/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
       - ./configs/traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
