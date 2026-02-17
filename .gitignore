@@ -38,6 +38,7 @@ env/
 Thumbs.db
 
 # Benchmark results (except examples)
+results/*/
 results/*.txt
 results/*.png
 !results/.gitkeep
