@@ -5,6 +5,10 @@
 
 Docker-based benchmarking suite comparing **Nginx**, **Caddy**, and **Traefik** across HTTP, HTTPS, HTTP/2, and resource-constrained scenarios.
 
+```
+make
+```
+
 ## Architecture
 
 ```mermaid
@@ -17,13 +21,19 @@ graph LR
     D -->|Proxy| E
 ```
 
-## Quick Start
+## Requirements
+
+- Docker with Docker Compose
+- Make
+- ~4GB RAM
+
+## Usage
 
 ```bash
-./run.sh
+make              # Run full benchmark
+make clean        # Stop and clean up
+make THREADS=8 CONNECTIONS=50 DURATION=10s  # Custom parameters
 ```
-
-Requires Docker Compose and ~4GB RAM. Runs benchmarks (4 threads, 20 connections, 3s duration) and generates comparison charts in `results/charts/`.
 
 ## Key Findings
 
@@ -37,22 +47,22 @@ Based on actual benchmarks (~20KB JSON payload):
 
 TLS adds 30-40% overhead. Resource constraints reduce throughput by 50-70%.
 
+![Benchmark Results](assets/example.png)
+
 ## Configuration
 
-Edit benchmark parameters in `run.sh` (search for `rewrk`):
+Proxy configs: `configs/{nginx,caddy,traefik}/`
+
+Resource limits: `docker-compose.yml`
+
+Benchmark parameters: `Makefile` (THREADS, CONNECTIONS, DURATION)
+
+## Manual
+
 ```bash
-rewrk -t4 -c20 -d3s --pct -h $url
-```
-
-Proxy configs are in `configs/{nginx,caddy,traefik}/`. Resource limits are defined in `docker-compose.yml`.
-
-## Manual Usage
-
-```bash
-docker compose up -d                              # Start services
-docker compose exec test-runner bash              # Enter container
-rewrk -t4 -c20 -d3s --pct -h http://nginx:80/data.json  # Run single test
-docker compose down -v                            # Stop and cleanup
+docker compose up -d
+docker compose exec test-runner rewrk -t4 -c20 -d3s --pct -h http://nginx:80/data.json
+docker compose down -v
 ```
 
 ## License
