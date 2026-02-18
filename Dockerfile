@@ -1,4 +1,4 @@
-FROM python:3.13-trixie as builder
+FROM python:3.13-trixie AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 
