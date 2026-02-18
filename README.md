@@ -3,9 +3,9 @@
 [![CI](https://github.com/fabianwimberger/reverse-proxy-benchmark/actions/workflows/ci.yml/badge.svg)](https://github.com/fabianwimberger/reverse-proxy-benchmark/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Docker-based benchmarking suite comparing **Nginx**, **Caddy**, and **Traefik** across HTTP/1.1, HTTPS/1.1, and HTTPS/2.
+A Docker-based benchmarking suite comparing **Nginx**, **Caddy**, and **Traefik** across HTTP/1.1, HTTPS/1.1, and HTTPS/2.
 
-Powered by [Vegeta](https://github.com/tsenart/vegeta) — an industry-standard HTTP load testing tool.
+Powered by [Vegeta](https://github.com/tsenart/vegeta), an industry-standard HTTP load testing tool.
 
 ```bash
 make
@@ -18,7 +18,7 @@ This project was created to systematically compare modern reverse proxy solution
 **Goals:**
 - Compare Nginx, Caddy, and Traefik across HTTP/1.1, HTTPS/1.1, and HTTPS/2
 - Establish baseline performance metrics for containerized deployments
-- **Upcoming:** Benchmark results from different Hetzner server types (dedicated vCPUs, shared vCPUs, ARM64) to understand how hardware affects proxy performance
+- Benchmark on different hardware (dedicated vs shared vCPUs) to understand how CPU affects proxy performance
 
 The methodology and all configurations are open-source so results can be independently verified or extended.
 
@@ -76,8 +76,6 @@ Based on Vegeta benchmarks with ~20KB JSON payload:
 
 ![Benchmark Results](assets/example.png)
 
-## Technical Notes
-
 ## Configuration
 
 | Component | Location |
@@ -127,4 +125,4 @@ docker compose down -v
 
 ## License
 
-MIT
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
