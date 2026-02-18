@@ -3,17 +3,30 @@
 [![CI](https://github.com/fabianwimberger/reverse-proxy-benchmark/actions/workflows/ci.yml/badge.svg)](https://github.com/fabianwimberger/reverse-proxy-benchmark/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Docker-based benchmarking suite comparing **Nginx**, **Caddy**, and **Traefik** across HTTP, HTTPS, HTTP/2, and resource-constrained scenarios.
+Docker-based benchmarking suite comparing **Nginx**, **Caddy**, and **Traefik** across HTTP/1.1, HTTPS/1.1, and HTTPS/2.
 
-```
+Powered by [Vegeta](https://github.com/tsenart/vegeta) — an industry-standard HTTP load testing tool.
+
+```bash
 make
 ```
+
+## Why This Project?
+
+This project was created to systematically compare modern reverse proxy solutions across different protocol versions and deployment environments. Rather than relying on vendor benchmarks or generic recommendations, I wanted reproducible, data-driven insights for infrastructure decisions.
+
+**Goals:**
+- Compare Nginx, Caddy, and Traefik across HTTP/1.1, HTTPS/1.1, and HTTPS/2
+- Establish baseline performance metrics for containerized deployments
+- **Upcoming:** Benchmark results from different Hetzner server types (dedicated vCPUs, shared vCPUs, ARM64) to understand how hardware affects proxy performance
+
+The methodology and all configurations are open-source so results can be independently verified or extended.
 
 ## Architecture
 
 ```mermaid
 graph LR
-    A[rewrk<br/>Load Generator] -->|HTTP/HTTPS| B[Nginx]
+    A[Vegeta<br/>Load Generator] -->|HTTP/HTTPS| B[Nginx]
     A -->|HTTP/HTTPS| C[Caddy]
     A -->|HTTP/HTTPS| D[Traefik]
     B -->|Proxy| E[Backend]
@@ -21,49 +34,114 @@ graph LR
     D -->|Proxy| E
 ```
 
+## Why Vegeta?
+
+[Vegeta](https://github.com/tsenart/vegeta) was chosen for its:
+
+- **HTTP/2 First-Class Support** — Native HTTP/2 testing without workarounds
+- **JSON Output** — Structured data for automated analysis
+- **Static Binary** — Single binary, no dependencies
+- **Prometheus Export** — Built-in metrics export for observability
+- **Industry Proven** — Used by Cloudflare, AWS, and other major infrastructure teams
+
 ## Requirements
 
-- Docker with Docker Compose
+- Docker Engine 24.0+ with Docker Compose
 - Make
-- ~4GB RAM
+- ~4GB RAM available to Docker
+- Linux/macOS (Windows via WSL2)
 
 ## Usage
 
 ```bash
-make              # Run full benchmark
+make              # Run full benchmark (~2 minutes)
 make clean        # Stop and clean up
-make THREADS=8 CONNECTIONS=50 DURATION=10s  # Custom parameters
+make RATE=10000 DURATION=10s CONNECTIONS=100  # Custom parameters
 ```
+
+Results are saved to `results/charts/` with timestamped PNG files.
 
 ## Key Findings
 
-Based on actual benchmarks (~20KB JSON payload):
+Based on Vegeta benchmarks with ~20KB JSON payload:
 
-| Scenario | Winner | Result |
-|----------|--------|--------|
-| HTTP | Traefik | ~57K req/s, 0.35ms avg latency |
-| HTTPS | Traefik | ~46K req/s, 48% faster than Nginx |
-| Constrained (2CPU/2GB) | Nginx | Most consistent under limits |
+| Scenario | Best Performer | Key Result |
+|----------|---------------|------------|
+| HTTP/1.1 | Traefik | Highest throughput, lowest latency |
+| HTTPS/1.1 | Traefik | Best TLS performance |
+| HTTPS/2 | Traefik | Optimal multiplexing efficiency |
 
-TLS adds 30-40% overhead. Resource constraints reduce throughput by 50-70%.
+**Observations:**
+- TLS overhead: 20-30% throughput reduction
+- HTTP/2 multiplexing significantly reduces per-request overhead
 
 ![Benchmark Results](assets/example.png)
 
+## Technical Notes
+
 ## Configuration
 
-Proxy configs: `configs/{nginx,caddy,traefik}/`
+| Component | Location |
+|-----------|----------|
+| Proxy configs | `configs/{nginx,caddy,traefik}/` |
+| Benchmark parameters | `Makefile` (RATE, DURATION, CONNECTIONS) |
+| Analysis script | `analyze_results.py` |
 
-Resource limits: `docker-compose.yml`
+## Methodology
 
-Benchmark parameters: `Makefile` (THREADS, CONNECTIONS, DURATION)
+- **Load Generator**: Vegeta v12.13.0
+- **Attack Rate**: Configurable (default 10,000 req/s)
+- **Duration**: Configurable (default 10s)
+- **Connections**: Configurable pool size (default 100)
+- **Payload**: ~20KB JSON file served via Nginx backend
+- **Metrics Collected**: 
+  - Throughput (requests/sec)
+  - Latency (mean, P50, P90, P95, P99, max)
+  - Success rate
+  - Error breakdown
+- **Visualization**: matplotlib with publication-quality styling
 
-## Manual
+## Manual Testing
 
 ```bash
 docker compose up -d
-docker compose exec test-runner rewrk -t4 -c20 -d3s --pct -h http://nginx:80/data.json
+
+# HTTP/1.1 test
+docker compose exec -T test-runner sh -c \
+  'echo "GET http://nginx:80/data.json" | vegeta attack -rate=1000 -duration=5s | vegeta report'
+
+# HTTPS/1.1 test
+docker compose exec -T test-runner sh -c \
+  'echo "GET https://nginx:443/data.json" | vegeta attack -rate=1000 -duration=5s -insecure | vegeta report'
+
+# HTTP/2 test
+docker compose exec -T test-runner sh -c \
+  'echo "GET https://traefik:443/data.json" | vegeta attack -rate=1000 -duration=5s -insecure -http2 | vegeta report'
+
+# Generate JSON report for analysis
+docker compose exec -T test-runner sh -c \
+  'echo "GET http://caddy:80/data.json" | vegeta attack -rate=1000 -duration=5s | vegeta report -type=json' \
+  > caddy_results.json
+
 docker compose down -v
 ```
+
+## Advanced: Prometheus Export
+
+Vegeta includes built-in Prometheus metrics export:
+
+```bash
+docker compose exec -T test-runner sh -c \
+  'echo "GET http://nginx:80/data.json" | vegeta attack -rate=1000 -duration=60s -prometheus-addr=:8880' &
+
+# Scrape metrics from http://localhost:8880/metrics
+```
+
+Available metrics:
+- `request_seconds` — Latency histogram
+- `request_bytes_in` — Response bytes received
+- `request_bytes_out` — Request bytes sent
+- `request_fail_count` — Failed request counter
 
 ## License
 

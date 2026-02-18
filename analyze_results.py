@@ -1,302 +1,354 @@
 #!/usr/bin/env python3
-import os
-import re
-import sys
-from datetime import datetime
-from collections import defaultdict
+"""
+Reverse Proxy Benchmark Analysis Script
 
-# Analysis script for benchmark results
-# Parses rewrk/wrk output and generates comparison charts
+Parses vegeta JSON output and generates publication-quality comparison charts.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import sys
+from collections import defaultdict
+from datetime import datetime
+from typing import Any
 
 try:
     import numpy as np
     import matplotlib.pyplot as plt
     from matplotlib import colormaps
+    from matplotlib.axes import Axes
+
     plt.rcParams.update({"figure.max_open_warning": 0})
     HAS_PLOT = True
 except ImportError:
     HAS_PLOT = False
 
 RESULTS_DIR = "./results"
-data = defaultdict(lambda: defaultdict(dict))
+CHART_DPI = 150
+FIGURE_SIZE = (16, 10)
 
-for proxy in os.listdir(RESULTS_DIR):
-    proxy_path = os.path.join(RESULTS_DIR, proxy)
-    if not os.path.isdir(proxy_path):
-        continue
 
-    for f in os.listdir(proxy_path):
-        if not f.endswith(".txt"):
+def parse_vegeta_json(filepath: str) -> dict[str, Any] | None:
+    """Parse vegeta JSON report output."""
+    try:
+        with open(filepath, encoding="utf-8") as f:
+            data = json.load(f)
+    except (IOError, OSError, json.JSONDecodeError) as e:
+        print(f"Warning: Could not parse {filepath}: {e}", file=sys.stderr)
+        return None
+
+    # Calculate error count from status_codes
+    status_codes = data.get("status_codes", {})
+    total_requests = data.get("requests", 0)
+    successful = status_codes.get("200", 0)
+    error_count = total_requests - successful
+
+    # Convert nanoseconds to milliseconds for latency values
+    latencies = data.get("latencies", {})
+
+    return {
+        "rps": data.get("rate", 0),
+        "throughput": data.get("throughput", 0),
+        "requests": total_requests,
+        "success": data.get("success", 0),
+        "errors": error_count,
+        "lat_mean": latencies.get("mean", 0) / 1e6,  # ns to ms
+        "lat_min": latencies.get("min", 0) / 1e6,
+        "lat_max": latencies.get("max", 0) / 1e6,
+        "lat_p50": latencies.get("50th", 0) / 1e6,
+        "lat_p90": latencies.get("90th", 0) / 1e6,
+        "lat_p95": latencies.get("95th", 0) / 1e6,
+        "lat_p99": latencies.get("99th", 0) / 1e6,
+        "bytes_in": data.get("bytes_in", {}).get("total", 0),
+        "bytes_out": data.get("bytes_out", {}).get("total", 0),
+        "error_list": data.get("errors", []),
+    }
+
+
+def calculate_error_rate(metrics: dict[str, Any]) -> float:
+    """Calculate error rate as percentage."""
+    total = metrics.get("requests", 0)
+    failed = metrics.get("errors", 0)
+
+    if total == 0:
+        return 0.0
+    return (failed / total) * 100
+
+
+def load_data() -> dict[str, dict[str, dict[str, Any]]]:
+    """Load all benchmark results from the results directory."""
+    data: dict[str, dict[str, dict[str, Any]]] = defaultdict(lambda: defaultdict(dict))
+
+    if not os.path.exists(RESULTS_DIR):
+        print(f"Error: Results directory '{RESULTS_DIR}' not found", file=sys.stderr)
+        return data
+
+    for proxy in os.listdir(RESULTS_DIR):
+        proxy_path = os.path.join(RESULTS_DIR, proxy)
+        if not os.path.isdir(proxy_path):
             continue
 
-        with open(os.path.join(proxy_path, f)) as file:
-            content = file.read()
+        for filename in os.listdir(proxy_path):
+            if not filename.endswith(".json"):
+                continue
 
-        m = {}
-        is_rewrk = "Req/Sec:" in content or "Transfer Rate:" in content
+            filepath = os.path.join(proxy_path, filename)
+            scenario = filename[:-5]  # Remove .json extension
+            metrics = parse_vegeta_json(filepath)
 
-        if is_rewrk:
-            patterns = {
-                "rps": (r"Req/Sec:\s*([\d.]+)", 0),
-                "lat": (r"Avg\s+Stdev[^\n]*\n\s+([\d.]+)ms", re.MULTILINE),
-                "std": (r"Avg\s+Stdev[^\n]*\n\s+[\d.]+ms\s+([\d.]+)ms", re.MULTILINE),
-                "max": (r"Avg\s+Stdev[^\n]*\n\s+[\d.]+ms\s+[\d.]+ms\s+[\d.]+ms\s+([\d.]+)ms", re.MULTILINE),
-                "tot": (r"Requests:\s*\n[^\n]*Total:\s+(\d+)", re.MULTILINE),
-                "tx": (r"Transfer Rate:\s+([\d.]+)\s*(MB|KB|GB)/Sec", 0),
-                "err": (r"(\d+)\s+Errors:", 0),
-            }
-        else:
-            patterns = {
-                "rps": (r"Requests/sec:\s*([\d.]+)", 0),
-                "tx": (r"Transfer/sec:\s*([\d.]+)\s*(MB|KB|GB)", 0),
-                "lat": (r"Latency\s+([\d.]+)\s*(us|ms|s)", 0),
-                "std": (r"Latency\s+[\d.]+\s*(us|ms|s)\s+([\d.]+)\s*(us|ms|s)", 0),
-                "max": (r"Latency\s+[\d.]+\s*(us|ms|s)\s+[\d.]+\s*(us|ms|s)\s+([\d.]+)\s*(us|ms|s)", 0),
-                "tot": (r"(\d+)\s+requests in", 0),
-                "err": (r"Non-2xx or 3xx responses:\s*(\d+)", 0),
-            }
+            if metrics:
+                data[proxy][scenario] = metrics
 
-        for k, (p, flags) in patterns.items():
-            match = re.search(p, content, flags)
-            if match:
-                try:
-                    if k == "tx":
-                        v = float(match.group(1))
-                        u = match.group(2) if len(match.groups()) > 1 else "MB"
-                        m["tx"] = v / 1024 if u == "KB" else v * 1024 if u == "GB" else v
-                    elif k in ["lat", "std", "max"]:
-                        if is_rewrk:
-                            m[k] = float(match.group(1))
-                        else:
-                            if k == "lat":
-                                v, u = float(match.group(1)), match.group(2)
-                            elif k == "std":
-                                v, u = float(match.group(2)), match.group(3)
-                            else:
-                                v, u = float(match.group(3)), match.group(4)
-                            m[k] = v / 1000 if u == "us" else v * 1000 if u == "s" else v
-                    else:
-                        m[k] = float(match.group(1))
-                except (ValueError, IndexError) as e:
-                    print(f"Warning: Failed to parse {k} from {proxy}/{f}: {e}", file=sys.stderr)
+    return data
 
-        if is_rewrk:
-            err_match = re.search(r"(\d+)\s+Errors:\s*(.+?)$", content, re.MULTILINE)
-            if err_match and m.get("err", 0) > 0:
-                m["err_type"] = err_match.group(2).strip()
-        else:
-            err_match = re.search(r"Non-2xx or 3xx responses:\s*(\d+)\s*(.+?)$", content, re.MULTILINE)
-            if err_match and m.get("err", 0) > 0:
-                m["err_type"] = err_match.group(2).strip()
 
-        if m.get("err", 0) > m.get("tot", 0):
-            m["err"] = m.get("tot", 0)
+def format_scenario_name(scenario: str) -> str:
+    """Format scenario name for display."""
+    mapping = {
+        "http": "HTTP/1.1",
+        "https": "HTTPS/1.1",
+        "https_http2": "HTTPS/2",
+    }
+    return mapping.get(scenario, scenario.replace("_", " ").title())
 
-        data[proxy][f[:-4]] = m
 
-print("\n" + "=" * 120)
-print("REVERSE PROXY BENCHMARK (~20KB JSON)")
-print("=" * 120)
+def print_results(data: dict[str, dict[str, dict[str, Any]]]) -> None:
+    """Print formatted benchmark results table."""
+    print("\n" + "=" * 150)
+    print("REVERSE PROXY BENCHMARK RESULTS (~20KB JSON Payload | Tool: Vegeta)")
+    print("=" * 150)
+    print("=" * 150)
 
-for sc in sorted(set(s for p in data.values() for s in p.keys())):
-    print(f"\n{sc.upper().replace('_', ' ')}")
-    print("-" * 155)
-    print(f"{'Proxy':<15} {'Req/s':<12} {'Lat(ms)':<12} {'Max(ms)':<12} {'Total':<12} {'MB/s':<12} {'Errors':<12} {'Error%':<10} {'Error Type':<30}")
-    print("-" * 155)
+    all_scenarios = sorted(set(s for proxy_data in data.values() for s in proxy_data.keys()))
 
-    for px in sorted(data.keys()):
-        if sc in data[px]:
-            d = data[px][sc]
-            err = d.get("err", 0)
-            tot = d.get("tot", 0)
-            err_pct = (err / tot * 100) if tot > 0 else 0
-            err_type = d.get("err_type", "-")
+    for scenario in all_scenarios:
+        print(f"\n{format_scenario_name(scenario).replace(chr(10), ' ')}")
+        print("-" * 150)
+        print(
+            f"{'Proxy':<18} {'Req/s':>10} {'Throughput':>12} {'Mean(ms)':>10} "
+            f"{'P99(ms)':>10} {'Max(ms)':>10} {'Success':>10} {'Errors':>8} {'Error%':>8}"
+        )
+        print("-" * 150)
+
+        for proxy in sorted(data.keys()):
+            if scenario not in data[proxy]:
+                continue
+
+            m = data[proxy][scenario]
+            err_rate = calculate_error_rate(m)
+
             print(
-                f"{px:<15} {d.get('rps', 0):<12.0f} {d.get('lat', 0):<12.2f} {d.get('max', 0):<12.2f} "
-                f"{tot:<12.0f} {d.get('tx', 0):<12.1f} {err:<12.0f} {err_pct:<10.2f}% {err_type:<30}"
+                f"{proxy:<18} "
+                f"{m.get('rps', 0):>10.1f} "
+                f"{m.get('throughput', 0):>12.1f} "
+                f"{m.get('lat_mean', 0):>10.2f} "
+                f"{m.get('lat_p99', 0):>10.2f} "
+                f"{m.get('lat_max', 0):>10.2f} "
+                f"{m.get('success', 0)*100:>9.1f}% "
+                f"{m.get('errors', 0):>8.0f} "
+                f"{err_rate:>7.2f}%"
             )
 
-if HAS_PLOT:
+
+def format_proxy_label(proxy: str) -> str:
+    """Format proxy name for display in legend."""
+    return proxy.capitalize()
+
+
+def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
+    """Generate publication-quality benchmark comparison charts.
+
+    Design principles:
+    - 1x3 layout focusing on key metrics: Throughput, Latency, Error Rate
+    - Colorblind-friendly palette (Okabe-Ito)
+    - Clear axis labeling with units
+    - Grouped by proxy type for easy comparison
+    - Log scales clearly indicated with visual grid lines
+    - Minimal clutter - no redundant labels
+    """
+    if not HAS_PLOT:
+        print("\nNote: Install matplotlib and numpy for chart generation")
+        return
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     chart_dir = os.path.join(RESULTS_DIR, "charts")
     os.makedirs(chart_dir, exist_ok=True)
 
-    pxs = sorted(data.keys())
-    scs = sorted(set(s for p in data.values() for s in p.keys()))
+    proxies = sorted(data.keys())
+    scenarios = sorted(set(s for proxy_data in data.values() for s in proxy_data.keys()))
 
-    fig = plt.figure(figsize=(18, 11))
-    gs = fig.add_gridspec(2, 2, hspace=0.35, wspace=0.3, top=0.93, bottom=0.07, left=0.06, right=0.96)
+    # Define scenario order for logical presentation
+    scenario_order = ["http", "https", "https_http2"]
+    scenarios = [s for s in scenario_order if s in scenarios]
 
-    a1 = fig.add_subplot(gs[0, 0])
-    a2 = fig.add_subplot(gs[0, 1])
-    a3 = fig.add_subplot(gs[1, 0])
-    a4 = fig.add_subplot(gs[1, 1])
+    # Okabe-Ito colorblind-friendly palette
+    colors = {
+        "caddy": "#E69F00",      # Orange
+        "nginx": "#56B4E9",      # Sky blue
+        "traefik": "#009E73",    # Bluish green
+    }
 
-    fig.suptitle("Reverse Proxy Performance Comparison", fontsize=18)
+    # Single row layout: Throughput | Latency | Error Rate
+    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+    fig.patch.set_facecolor("white")
 
-    x = np.arange(len(scs))
-    w = 0.25
+    # Clean title without redundant information
+    fig.suptitle(
+        "Reverse Proxy Performance Benchmark",
+        fontsize=14, fontweight="semibold", y=0.98
+    )
 
-    cmap = colormaps['tab10']
-    c = [cmap(i / len(pxs)) for i in range(len(pxs))]
+    ax_throughput, ax_latency, ax_errors = axes
 
-    for i, px in enumerate(pxs):
-        vals = [data[px].get(s, {}).get("rps", 0) for s in scs]
-        errs = [data[px].get(s, {}).get("err", 0) for s in scs]
-        tots = [data[px].get(s, {}).get("tot", 1) for s in scs]
-        err_pcts = [(e/t*100) if t > 0 else 0 for e, t in zip(errs, tots)]
+    x = np.arange(len(scenarios))
+    width = 0.25
 
-        bars = a1.bar(x + w * (i - 1), vals, w, label=px.capitalize(),
-                      color=c[i])
-
-        for j, bar in enumerate(bars):
-            if bar.get_height() > 0:
-                label = f"{bar.get_height():.0f}"
-                a1.text(bar.get_x() + bar.get_width() / 2, bar.get_height(),
-                        label, ha="center", va="bottom", fontsize=7)
-
-    a1.set_xlabel("Scenario")
-    a1.set_ylabel("Requests/s")
-    a1.set_title("Throughput (Requests/sec)", fontsize=14, pad=15)
-    a1.set_xticks(x)
-    a1.set_xticklabels([s.replace("_", "\n") for s in scs])
-    a1.set_yscale('log')
-    a1.legend()
-    a1.grid(axis="y", alpha=0.5, linestyle='--')
-
-    for i, px in enumerate(pxs):
-        vals = [data[px].get(s, {}).get("tx", 0) for s in scs]
-        errs = [data[px].get(s, {}).get("err", 0) for s in scs]
-        tots = [data[px].get(s, {}).get("tot", 1) for s in scs]
-        err_pcts = [(e/t*100) if t > 0 else 0 for e, t in zip(errs, tots)]
-
-        bars = a2.bar(x + w * (i - 1), vals, w, label=px.capitalize(),
-                      color=c[i])
-
-        for j, bar in enumerate(bars):
-            if bar.get_height() > 0:
-                label = f"{bar.get_height():.0f}"
-                a2.text(bar.get_x() + bar.get_width() / 2, bar.get_height(),
-                        label, ha="center", va="bottom", fontsize=7)
-
-    a2.set_xlabel("Scenario")
-    a2.set_ylabel("MB/s")
-    a2.set_title("Throughput (MB/sec)", fontsize=14, pad=15)
-    a2.set_xticks(x)
-    a2.set_xticklabels([s.replace("_", "\n") for s in scs])
-    a2.set_yscale('log')
-    a2.legend()
-    a2.grid(axis="y", alpha=0.5, linestyle='--')
-
-    for i, px in enumerate(pxs):
-        lats = [data[px].get(s, {}).get("lat", 0) for s in scs]
-        stds = [data[px].get(s, {}).get("std", 0) for s in scs]
-        yerr_lower = [min(lat, std) for lat, std in zip(lats, stds)]
-        yerr_upper = stds
-
-        bars = a3.bar(x + w * (i - 1), lats, w, yerr=[yerr_lower, yerr_upper],
-                      label=px.capitalize(), color=c[i])
-
-        for j, bar in enumerate(bars):
-            if bar.get_height() > 0:
-                a3.text(bar.get_x() + bar.get_width() / 2,
-                        bar.get_height() + stds[j],
-                        f"{bar.get_height():.1f}", ha="center", va="bottom",
-                        fontsize=7)
-
-    a3.set_xlabel("Scenario")
-    a3.set_ylabel("Latency (ms)")
-    aNT = "Average Latency with Standard Deviation"
-    a3.set_title(aNT, fontsize=14, pad=15)
-    a3.set_xticks(x)
-    a3.set_xticklabels([s.replace("_", "\n") for s in scs])
-    a3.set_yscale('log')
-    a3.legend()
-    a3.grid(axis="y", alpha=0.5, linestyle='--')
-
-    for i, px in enumerate(pxs):
-        errs = [data[px].get(s, {}).get("err", 0) for s in scs]
-        tots = [data[px].get(s, {}).get("tot", 1) for s in scs]
-        err_pcts = [(e/t*100) if t > 0 else 0 for e, t in zip(errs, tots)]
-
-        bars = a4.bar(x + w * (i - 1), err_pcts, w, label=px.capitalize(),
-                      color=c[i])
-
-        for j, bar in enumerate(bars):
-            height = bar.get_height()
-            if height > 0.01:
-                if height >= 1:
-                    label = f"{height:.1f}%"
-                elif height >= 0.01:
-                    label = f"{height:.2f}%"
-                else:
-                    label = f"{height:.3f}%"
-
-                a4.text(bar.get_x() + bar.get_width() / 2, height,
-                        label, ha="center", va="bottom", fontsize=7)
-
-    a4.set_xlabel("Scenario")
-    a4.set_ylabel("Error Rate (%)")
-    a4.set_title("Error Rate (% of Failed Requests)", fontsize=14, pad=15)
-    a4.set_xticks(x)
-    a4.set_xticklabels([s.replace("_", "\n") for s in scs])
-
-    all_err_pcts = []
-    for px in pxs:
-        for s in scs:
-            err = data[px].get(s, {}).get("err", 0)
-            tot = data[px].get(s, {}).get("tot", 1)
-            if tot > 0:
-                all_err_pcts.append((err/tot*100))
-
-    if all_err_pcts:
-        max_err = max(all_err_pcts)
-        min_pos_err = min([p for p in all_err_pcts if p > 0] or [1])
-
-        if max_err > 0 and min_pos_err / max_err < 0.01:
-            a4.set_yscale('log')
-            a4.set_ylim(bottom=0.001)
+    # Shared styling function
+    def style_axis(ax, ylabel: str, title: str, use_log: bool = True, log_min: float = None) -> None:
+        ax.set_xlabel("Protocol", fontsize=10, fontweight="medium")
+        ax.set_ylabel(ylabel, fontsize=10, fontweight="medium")
+        ax.set_title(title, fontsize=11, fontweight="semibold", pad=12)
+        ax.set_xticks(x)
+        ax.set_xticklabels([format_scenario_name(s) for s in scenarios], fontsize=9)
+        if use_log:
+            ax.set_yscale("log")
+            if log_min is not None:
+                ax.set_ylim(bottom=log_min)
+            ax.grid(axis="y", alpha=0.2, linestyle=":", linewidth=0.7, which="both")
         else:
-            a4.set_ylim(bottom=0)
+            ax.grid(axis="y", alpha=0.2, linestyle=":", linewidth=0.7)
+        ax.set_axisbelow(True)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+
+    # Plot 1: Throughput (Successful requests per second)
+    for i, proxy in enumerate(proxies):
+        values = [data[proxy].get(s, {}).get("throughput", 0) for s in scenarios]
+        ax_throughput.bar(
+            x + width * (i - 1), values, width,
+            label=format_proxy_label(proxy),
+            color=colors.get(proxy, f"C{i}"),
+            alpha=0.85,
+            edgecolor="white", linewidth=1.2
+        )
+
+    style_axis(
+        ax_throughput,
+        ylabel="Throughput (req/s)",
+        title="Throughput (higher is better)",
+        use_log=True,
+        log_min=0.1
+    )
+    ax_throughput.legend(
+        loc="lower left",
+        framealpha=0.95,
+        fontsize=9,
+        edgecolor="#cccccc",
+        title="Proxy"
+    )
+
+    # Plot 2: Latency (P95)
+    for i, proxy in enumerate(proxies):
+        p95s = [data[proxy].get(s, {}).get("lat_p95", 0) for s in scenarios]
+
+        ax_latency.bar(
+            x + width * (i - 1), p95s, width,
+            label=format_proxy_label(proxy),
+            color=colors.get(proxy, f"C{i}"),
+            alpha=0.85,
+            edgecolor="white", linewidth=1.2
+        )
+
+    style_axis(
+        ax_latency,
+        ylabel="Latency (ms)",
+        title="P95 latency (lower is better)",
+        use_log=True,
+        log_min=0.1
+    )
+
+    # Plot 3: Error Rate
+    all_err_rates = []
+    for i, proxy in enumerate(proxies):
+        err_rates = []
+        for s in scenarios:
+            m = data[proxy].get(s, {})
+            err_rates.append(calculate_error_rate(m))
+        all_err_rates.extend(err_rates)
+
+        ax_errors.bar(
+            x + width * (i - 1), err_rates, width,
+            label=format_proxy_label(proxy),
+            color=colors.get(proxy, f"C{i}"),
+            alpha=0.85,
+            edgecolor="white", linewidth=1.2
+        )
+
+    # Use log scale only if there are non-zero error rates
+    use_log_errors = any(v > 0 for v in all_err_rates)
+    style_axis(
+        ax_errors,
+        ylabel="Error Rate (%)",
+        title="Error rate (lower is better)",
+        use_log=use_log_errors
+    )
+
+    # Footer with metadata
+    footer = (
+        f"Tool: Vegeta v12.13.0 | "
+        f"Payload: ~20KB JSON | "
+        f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+    )
+    fig.text(0.5, 0.01, footer, ha="center", fontsize=8, color="#666666", style="italic")
+
+    plt.tight_layout(rect=[0, 0.02, 1, 0.94])
+
+    chart_path = os.path.join(chart_dir, f"benchmark_{timestamp}.png")
+    plt.savefig(chart_path, dpi=CHART_DPI, bbox_inches="tight", facecolor="white")
+    plt.close()
+
+    print(f"\n✓ Chart saved: {chart_path}")
+
+
+def print_error_summary(data: dict[str, dict[str, dict[str, Any]]]) -> None:
+    """Print summary of error types encountered."""
+    error_types: set[str] = set()
+
+    for proxy_data in data.values():
+        for scenario_data in proxy_data.values():
+            for err in scenario_data.get("error_list", []):
+                error_types.add(err)
+
+    print("\n" + "=" * 150)
+    if error_types:
+        print("ERROR TYPES SUMMARY")
+        print("=" * 150)
+        for err_type in sorted(error_types):
+            print(f"  • {err_type}")
     else:
-        a4.set_ylim(bottom=0)
+        print("No errors detected in any benchmarks")
+    print("=" * 150)
 
 
-    a4.legend()
-    a4.grid(axis="y", alpha=0.5, linestyle='--')
+def main() -> int:
+    """Main entry point."""
+    data = load_data()
 
-    chart_file = os.path.join(chart_dir, f"summary_{timestamp}.png")
-    plt.savefig(chart_file, dpi=120, bbox_inches="tight")
-    try:
-        os.chmod(chart_file, 0o777)
-        os.chmod(chart_dir, 0o777)
-    except PermissionError:
-        pass
-    print(f"\n✓ Simplified Chart: ./results/charts/summary_{timestamp}.png")
+    if not data:
+        print("Error: No benchmark data found in 'results/' directory", file=sys.stderr)
+        return 1
 
-error_types_found = set()
-for px in data.values():
-    for scenario in px.values():
-        if "err_type" in scenario:
-            error_types_found.add(scenario["err_type"])
+    print_results(data)
 
-if error_types_found:
-    print("\n" + "=" * 120)
-    print("ERROR TYPES FOUND")
-    print("=" * 120)
-    for err_type in sorted(error_types_found):
-        print(f"  • {err_type}")
-    print("=" * 120 + "\n")
-else:
-    print("\n" + "=" * 120)
-    print("No errors detected in any benchmarks")
-    print("=" * 120 + "\n")
+    if HAS_PLOT:
+        create_scientific_chart(data)
 
-report_file = os.path.join(RESULTS_DIR, "report.json")
-if os.path.exists(report_file):
-    os.remove(report_file)
+    print_error_summary(data)
 
-try:
-    os.chmod(RESULTS_DIR, 0o777)
-except PermissionError:
-    pass
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

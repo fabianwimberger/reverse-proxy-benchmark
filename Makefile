@@ -1,9 +1,8 @@
 .PHONY: all bench clean
 
-THREADS ?= 4
-CONNECTIONS ?= 20
-DURATION ?= 3s
-
+RATE ?= 10000
+DURATION ?= 15s
+CONNECTIONS ?= 10
 all: bench
 
 bench:
@@ -21,36 +20,25 @@ bench:
 	@mkdir -p results
 	@$(MAKE) run-benchmarks
 	@echo "Analyzing..."
-	@docker compose exec -T test-runner python /app/analyze_results.py
+	@docker compose exec -T test-runner python3 /app/analyze_results.py
 	@echo "Done. Results in results/charts/"
 
 run-benchmarks:
 	@docker compose exec -T test-runner bash -c ' \
-		threads=$(THREADS); conn=$(CONNECTIONS); dur=$(DURATION); \
+		rate="$(RATE)"; dur="$(DURATION)"; conn="$(CONNECTIONS)"; \
 		bench() { \
 			mkdir -p "/app/results/$$1"; \
-			cmd="rewrk -t$$threads -c$$conn -d$$dur --pct -h $$2"; \
-			[ -n "$$3" ] && cmd="$$cmd --http2"; \
-			$$cmd > "/app/results/$$1/$$4.txt" 2>&1 || true; \
+			echo "GET $$2" | vegeta attack -rate=$$rate -duration=$$dur -connections=$$conn $$3 | vegeta report -type=json > "/app/results/$$1/$$4.json"; \
 		}; \
 		bench nginx http://nginx:80/data.json "" http; \
-		bench nginx https://nginx:443/data.json "" https; \
-		bench nginx https://nginx:443/data.json 1 https_http2; \
+		bench nginx https://nginx:443/data.json "-insecure" https; \
+		bench nginx https://nginx:443/data.json "-insecure -http2" https_http2; \
 		bench caddy http://caddy:80/data.json "" http; \
-		bench caddy https://caddy:443/data.json "" https; \
-		bench caddy https://caddy:443/data.json 1 https_http2; \
+		bench caddy https://caddy:443/data.json "-insecure" https; \
+		bench caddy https://caddy:443/data.json "-insecure -http2" https_http2; \
 		bench traefik http://traefik:80/data.json "" http; \
-		bench traefik https://traefik:443/data.json "" https; \
-		bench traefik https://traefik:443/data.json 1 https_http2; \
-		bench nginx_constrained http://nginx_constrained:80/data.json "" http; \
-		bench nginx_constrained https://nginx_constrained:443/data.json "" https; \
-		bench nginx_constrained https://nginx_constrained:443/data.json 1 https_http2; \
-		bench caddy_constrained http://caddy_constrained:80/data.json "" http; \
-		bench caddy_constrained https://caddy_constrained:443/data.json "" https; \
-		bench caddy_constrained https://caddy_constrained:443/data.json 1 https_http2; \
-		bench traefik_constrained http://traefik_constrained:80/data.json "" http; \
-		bench traefik_constrained https://traefik_constrained:443/data.json "" https; \
-		bench traefik_constrained https://traefik_constrained:443/data.json 1 https_http2; \
+		bench traefik https://traefik:443/data.json "-insecure" https; \
+		bench traefik https://traefik:443/data.json "-insecure -http2" https_http2; \
 	'
 
 clean:

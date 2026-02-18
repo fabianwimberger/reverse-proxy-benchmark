@@ -1,36 +1,27 @@
-FROM python:3.13-trixie AS builder
+FROM debian:trixie-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Install dependencies
 RUN apt-get update -qq && \
     apt-get install -y -qq --no-install-recommends \
-    curl wget ca-certificates build-essential git > /dev/null && \
+    ca-certificates curl python3 python3-pip > /dev/null && \
     rm -rf /var/lib/apt/lists/*
 
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
-ENV PATH="/root/.cargo/bin:${PATH}"
-
-RUN git clone https://github.com/ChillFish8/rewrk.git /tmp/rewrk && \
-    cd /tmp/rewrk && \
-    cargo build --release && \
-    cp target/release/rewrk /usr/local/bin/rewrk && \
-    chmod +x /usr/local/bin/rewrk
-
-FROM python:3.13-trixie
-
-ENV DEBIAN_FRONTEND=noninteractive
-
-RUN apt-get update -qq && \
-    apt-get install -y -qq --no-install-recommends \
-    curl wget apache2-utils ca-certificates > /dev/null && \
-    rm -rf /var/lib/apt/lists/*
-
-COPY --from=builder /usr/local/bin/rewrk /usr/local/bin/rewrk
-
-COPY requirements.txt /app/requirements.txt
-RUN pip install -r /app/requirements.txt
+# Install vegeta (static binary)
+ARG VEGETA_VERSION=12.13.0
+RUN curl -L -o /tmp/vegeta.tar.gz \
+    https://github.com/tsenart/vegeta/releases/download/v${VEGETA_VERSION}/vegeta_${VEGETA_VERSION}_linux_amd64.tar.gz && \
+    tar -xzf /tmp/vegeta.tar.gz -C /usr/local/bin vegeta && \
+    rm /tmp/vegeta.tar.gz && \
+    chmod +x /usr/local/bin/vegeta
 
 WORKDIR /app
 
+# Install Python dependencies
+COPY requirements.txt /app/requirements.txt
+RUN pip3 install --break-system-packages -r /app/requirements.txt || pip3 install -r /app/requirements.txt
+
 COPY analyze_results.py /app/analyze_results.py
 
+CMD ["sleep", "infinity"]
