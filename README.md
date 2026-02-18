@@ -39,7 +39,7 @@ TLS adds 30-40% overhead. Resource constraints reduce throughput by 50-70%.
 
 ## Configuration
 
-Edit benchmark parameters in `run.sh`:
+Edit benchmark parameters in `run.sh` (search for `rewrk`):
 ```bash
 rewrk -t4 -c20 -d3s --pct -h $url
 ```
