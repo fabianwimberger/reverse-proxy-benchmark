@@ -2,7 +2,7 @@
 """
 Reverse Proxy Benchmark Analysis Script
 
-Parses vegeta JSON output and generates publication-quality comparison charts.
+Parses vegeta JSON output and generates comparison charts.
 """
 
 from __future__ import annotations
@@ -12,15 +12,11 @@ import os
 import sys
 from collections import defaultdict
 from datetime import datetime
-from typing import Any, TYPE_CHECKING
+from typing import Any
 
 try:
     import numpy as np
     import matplotlib.pyplot as plt
-
-    if TYPE_CHECKING:
-        from matplotlib import colormaps
-        from matplotlib.axes import Axes
 
     plt.rcParams.update({"figure.max_open_warning": 0})
     HAS_PLOT = True
@@ -160,7 +156,7 @@ def format_proxy_label(proxy: str) -> str:
 
 
 def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
-    """Generate publication-quality benchmark comparison charts.
+    """Generate benchmark comparison charts.
 
     Design principles:
     - 1x3 layout focusing on key metrics: Throughput, Latency, Error Rate
@@ -288,14 +284,13 @@ def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
             edgecolor="white", linewidth=1.2
         )
 
-    # Use log scale only if there are non-zero error rates
-    use_log_errors = any(v > 0 for v in all_err_rates)
     style_axis(
         ax_errors,
         ylabel="Error Rate (%)",
         title="Error rate (lower is better)",
-        use_log=use_log_errors
+        use_log=False
     )
+    ax_errors.set_ylim(0, 100)
 
     # Footer with metadata
     footer = (

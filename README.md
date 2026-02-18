@@ -41,7 +41,6 @@ graph LR
 - **HTTP/2 First-Class Support** — Native HTTP/2 testing without workarounds
 - **JSON Output** — Structured data for automated analysis
 - **Static Binary** — Single binary, no dependencies
-- **Prometheus Export** — Built-in metrics export for observability
 - **Industry Proven** — Used by Cloudflare, AWS, and other major infrastructure teams
 
 ## Requirements
@@ -99,7 +98,7 @@ Based on Vegeta benchmarks with ~20KB JSON payload:
   - Latency (mean, P50, P90, P95, P99, max)
   - Success rate
   - Error breakdown
-- **Visualization**: matplotlib with publication-quality styling
+- **Visualization**: matplotlib with clean, readable charts
 
 ## Manual Testing
 
@@ -125,23 +124,6 @@ docker compose exec -T test-runner sh -c \
 
 docker compose down -v
 ```
-
-## Advanced: Prometheus Export
-
-Vegeta includes built-in Prometheus metrics export:
-
-```bash
-docker compose exec -T test-runner sh -c \
-  'echo "GET http://nginx:80/data.json" | vegeta attack -rate=1000 -duration=60s -prometheus-addr=:8880' &
-
-# Scrape metrics from http://localhost:8880/metrics
-```
-
-Available metrics:
-- `request_seconds` — Latency histogram
-- `request_bytes_in` — Response bytes received
-- `request_bytes_out` — Request bytes sent
-- `request_fail_count` — Failed request counter
 
 ## License
 
