@@ -12,13 +12,15 @@ import os
 import sys
 from collections import defaultdict
 from datetime import datetime
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 try:
     import numpy as np
     import matplotlib.pyplot as plt
-    from matplotlib import colormaps
-    from matplotlib.axes import Axes
+
+    if TYPE_CHECKING:
+        from matplotlib import colormaps
+        from matplotlib.axes import Axes
 
     plt.rcParams.update({"figure.max_open_warning": 0})
     HAS_PLOT = True

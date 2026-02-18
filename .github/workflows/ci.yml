@@ -35,4 +35,4 @@ jobs:
         run: docker build -t reverse-proxy-benchmark:test .
 
       - name: Test
-        run: docker run --rm reverse-proxy-benchmark:test python --version
+        run: docker run --rm reverse-proxy-benchmark:test python3 --version
