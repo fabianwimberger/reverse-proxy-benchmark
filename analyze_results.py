@@ -32,13 +32,13 @@ FIGURE_SIZE = (16, 10)
 def get_system_info() -> dict[str, str]:
     """Get host system information (cores, RAM, OS)."""
     info = {}
-    
+
     # CPU cores
     try:
         info["cores"] = str(os.cpu_count()) if os.cpu_count() else "Unknown"
     except Exception:
         info["cores"] = "Unknown"
-    
+
     # RAM info
     try:
         with open("/proc/meminfo", "r") as f:
@@ -50,12 +50,12 @@ def get_system_info() -> dict[str, str]:
                     break
     except (IOError, OSError, ValueError):
         info["ram"] = "Unknown"
-    
+
     # OS info - try host OS first (mounted), then container's OS
     try:
         os_release_paths = ["/host/etc/os-release", "/etc/os-release"]
         distro_name = None
-        
+
         for path in os_release_paths:
             try:
                 with open(path, "r") as f:
@@ -64,13 +64,15 @@ def get_system_info() -> dict[str, str]:
                         if "=" in line:
                             key, value = line.strip().split("=", 1)
                             os_release[key] = value.strip('"')
-                    
-                    distro_name = os_release.get("PRETTY_NAME") or os_release.get("NAME")
+
+                    distro_name = os_release.get("PRETTY_NAME") or os_release.get(
+                        "NAME"
+                    )
                     if distro_name:
                         break
             except (IOError, OSError):
                 continue
-        
+
         if distro_name:
             info["os"] = distro_name
         else:
@@ -80,7 +82,7 @@ def get_system_info() -> dict[str, str]:
             info["os"] = f"{os_name} {os_version}"
     except Exception:
         info["os"] = "Unknown"
-    
+
     return info
 
 
@@ -175,7 +177,9 @@ def print_results(data: dict[str, dict[str, dict[str, Any]]]) -> None:
     print("=" * 150)
     print("=" * 150)
 
-    all_scenarios = sorted(set(s for proxy_data in data.values() for s in proxy_data.keys()))
+    all_scenarios = sorted(
+        set(s for proxy_data in data.values() for s in proxy_data.keys())
+    )
 
     for scenario in all_scenarios:
         print(f"\n{format_scenario_name(scenario).replace(chr(10), ' ')}")
@@ -200,7 +204,7 @@ def print_results(data: dict[str, dict[str, dict[str, Any]]]) -> None:
                 f"{m.get('lat_mean', 0):>10.2f} "
                 f"{m.get('lat_p99', 0):>10.2f} "
                 f"{m.get('lat_max', 0):>10.2f} "
-                f"{m.get('success', 0)*100:>9.1f}% "
+                f"{m.get('success', 0) * 100:>9.1f}% "
                 f"{m.get('errors', 0):>8.0f} "
                 f"{err_rate:>7.2f}%"
             )
@@ -231,7 +235,9 @@ def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
     os.makedirs(chart_dir, exist_ok=True)
 
     proxies = sorted(data.keys())
-    scenarios = sorted(set(s for proxy_data in data.values() for s in proxy_data.keys()))
+    scenarios = sorted(
+        set(s for proxy_data in data.values() for s in proxy_data.keys())
+    )
 
     # Define scenario order for logical presentation
     scenario_order = ["http", "https", "https_http2"]
@@ -239,9 +245,9 @@ def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
 
     # Okabe-Ito colorblind-friendly palette
     colors = {
-        "caddy": "#E69F00",      # Orange
-        "nginx": "#56B4E9",      # Sky blue
-        "traefik": "#009E73",    # Bluish green
+        "caddy": "#E69F00",  # Orange
+        "nginx": "#56B4E9",  # Sky blue
+        "traefik": "#009E73",  # Bluish green
     }
 
     # Single row layout: Throughput | Latency | Error Rate
@@ -251,7 +257,9 @@ def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
     # Clean title without redundant information
     fig.suptitle(
         "Reverse Proxy Performance Benchmark",
-        fontsize=14, fontweight="semibold", y=0.98
+        fontsize=14,
+        fontweight="semibold",
+        y=0.98,
     )
 
     ax_throughput, ax_latency, ax_errors = axes
@@ -260,7 +268,9 @@ def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
     width = 0.25
 
     # Shared styling function
-    def style_axis(ax, ylabel: str, title: str, use_log: bool = True, log_min: float = None) -> None:
+    def style_axis(
+        ax, ylabel: str, title: str, use_log: bool = True, log_min: float = None
+    ) -> None:
         ax.set_xlabel("Protocol", fontsize=10, fontweight="medium")
         ax.set_ylabel(ylabel, fontsize=10, fontweight="medium")
         ax.set_title(title, fontsize=11, fontweight="semibold", pad=12)
@@ -281,11 +291,14 @@ def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
     for i, proxy in enumerate(proxies):
         values = [data[proxy].get(s, {}).get("throughput", 0) for s in scenarios]
         ax_throughput.bar(
-            x + width * (i - 1), values, width,
+            x + width * (i - 1),
+            values,
+            width,
             label=format_proxy_label(proxy),
             color=colors.get(proxy, f"C{i}"),
             alpha=0.85,
-            edgecolor="white", linewidth=1.2
+            edgecolor="white",
+            linewidth=1.2,
         )
 
     style_axis(
@@ -293,14 +306,14 @@ def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
         ylabel="Throughput (req/s)",
         title="Throughput (higher is better)",
         use_log=True,
-        log_min=0.1
+        log_min=0.1,
     )
     ax_throughput.legend(
         loc="lower left",
         framealpha=0.95,
         fontsize=9,
         edgecolor="#cccccc",
-        title="Proxy"
+        title="Proxy",
     )
 
     # Plot 2: Latency (Mean and P99)
@@ -310,29 +323,34 @@ def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
 
         # Plot mean latency as solid bars
         ax_latency.bar(
-            x + width * (i - 1), means, width,
+            x + width * (i - 1),
+            means,
+            width,
             label=f"{format_proxy_label(proxy)} (Mean)",
             color=colors.get(proxy, f"C{i}"),
             alpha=0.85,
-            edgecolor="white", linewidth=1.2
+            edgecolor="white",
+            linewidth=1.2,
         )
 
         # Plot P99 latency as outlined overlay
         ax_latency.bar(
-            x + width * (i - 1), p99s, width,
+            x + width * (i - 1),
+            p99s,
+            width,
             color="none",
             edgecolor=colors.get(proxy, f"C{i}"),
             linewidth=2.5,
             linestyle="--",
             label=f"{format_proxy_label(proxy)} (P99)",
-            alpha=1.0
+            alpha=1.0,
         )
 
     style_axis(
         ax_latency,
         ylabel="Latency (ms)",
         title="Mean (filled) & P99 (outline) latency (lower is better)",
-        use_log=False
+        use_log=False,
     )
 
     # Plot 3: Error Rate
@@ -345,25 +363,28 @@ def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
         all_err_rates.extend(err_rates)
 
         ax_errors.bar(
-            x + width * (i - 1), err_rates, width,
+            x + width * (i - 1),
+            err_rates,
+            width,
             label=format_proxy_label(proxy),
             color=colors.get(proxy, f"C{i}"),
             alpha=0.85,
-            edgecolor="white", linewidth=1.2
+            edgecolor="white",
+            linewidth=1.2,
         )
 
     style_axis(
         ax_errors,
         ylabel="Error Rate (%)",
         title="Error rate (lower is better)",
-        use_log=False
+        use_log=False,
     )
     ax_errors.set_ylim(0, 100)
 
     # Get system info for display
     sys_info = get_system_info()
     sys_info_str = f"Host: {sys_info.get('cores', '?')} cores | {sys_info.get('ram', '?')} RAM | {sys_info.get('os', '?')}"
-    
+
     # Footer with metadata
     footer = (
         f"Tool: Vegeta v12.13.0 | "
@@ -371,7 +392,9 @@ def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
         f"{sys_info_str} | "
         f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}"
     )
-    fig.text(0.5, 0.01, footer, ha="center", fontsize=8, color="#666666", style="italic")
+    fig.text(
+        0.5, 0.01, footer, ha="center", fontsize=8, color="#666666", style="italic"
+    )
 
     plt.tight_layout(rect=[0, 0.02, 1, 0.94])
 

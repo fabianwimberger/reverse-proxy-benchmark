@@ -1,0 +1,49 @@
+version: 2
+updates:
+  # Docker image dependencies
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "ci"
+    labels:
+      - "dependencies"
+      - "docker"
+    groups:
+      docker-images:
+        patterns:
+          - "nginx"
+          - "caddy"
+          - "traefik"
+          - "debian"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "ci"
+    labels:
+      - "dependencies"
+      - "github-actions"
+
+  # Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "deps"
+    labels:
+      - "dependencies"
+      - "python"
+    groups:
+      python-dependencies:
+        patterns:
+          - "matplotlib"
+          - "numpy"

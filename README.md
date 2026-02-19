@@ -87,9 +87,9 @@ Based on Vegeta benchmarks with ~20KB JSON payload:
 ## Methodology
 
 - **Load Generator**: Vegeta v12.13.0
-- **Attack Rate**: Configurable (default 10,000 req/s)
-- **Duration**: Configurable (default 10s)
-- **Connections**: Configurable pool size (default 100)
+- **Attack Rate**: Configurable (default 5,000 req/s)
+- **Duration**: Configurable (default 20s)
+- **Connections**: Configurable pool size (default 5)
 - **Payload**: ~20KB JSON file served via Nginx backend
 - **Metrics Collected**: 
   - Throughput (requests/sec)

@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, develop]
   pull_request:
-    branches: [main, master]
+    branches: [main, master, develop]
 
 jobs:
   lint:
@@ -24,6 +24,16 @@ jobs:
           pip install ruff
           ruff check analyze_results.py
 
+      - name: Ruff format check
+        run: |
+          pip install ruff
+          ruff format --check analyze_results.py
+
+      - name: Type check with mypy
+        run: |
+          pip install mypy
+          mypy analyze_results.py --ignore-missing-imports || true
+
   docker:
     name: Docker Build
     runs-on: ubuntu-latest
@@ -36,3 +46,39 @@ jobs:
 
       - name: Test
         run: docker run --rm reverse-proxy-benchmark:test python3 --version
+
+  smoke-test:
+    name: Smoke Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run quick benchmark
+        run: make RATE=50 DURATION=2s CONNECTIONS=2
+
+      - name: Verify output files
+        run: |
+          if [ ! -d "results" ]; then
+            echo "results directory not found"
+            exit 1
+          fi
+          find results -name "*.json" -type f | while read -r file; do
+            if [ ! -s "$file" ]; then
+              echo "Empty result file: $file"
+              exit 1
+            fi
+            # Verify it's valid JSON
+            if ! python3 -m json.tool "$file" > /dev/null 2>&1; then
+              echo "Invalid JSON in: $file"
+              exit 1
+            fi
+          done
+          echo "All result files are valid"
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test-results
+          path: results/
