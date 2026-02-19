@@ -9,10 +9,13 @@ from __future__ import annotations
 
 import json
 import os
+import platform
 import sys
 from collections import defaultdict
 from datetime import datetime
 from typing import Any
+
+import subprocess
 
 try:
     import numpy as np
@@ -26,6 +29,61 @@ except ImportError:
 RESULTS_DIR = "./results"
 CHART_DPI = 150
 FIGURE_SIZE = (16, 10)
+
+
+def get_system_info() -> dict[str, str]:
+    """Get host system information (cores, RAM, OS)."""
+    info = {}
+    
+    # CPU cores
+    try:
+        info["cores"] = str(os.cpu_count()) if os.cpu_count() else "Unknown"
+    except Exception:
+        info["cores"] = "Unknown"
+    
+    # RAM info
+    try:
+        with open("/proc/meminfo", "r") as f:
+            for line in f:
+                if line.startswith("MemTotal:"):
+                    mem_kb = int(line.split()[1])
+                    mem_gb = mem_kb / (1024 * 1024)
+                    info["ram"] = f"{mem_gb:.1f}GB"
+                    break
+    except (IOError, OSError, ValueError):
+        info["ram"] = "Unknown"
+    
+    # OS info - try host OS first (mounted), then container's OS
+    try:
+        os_release_paths = ["/host/etc/os-release", "/etc/os-release"]
+        distro_name = None
+        
+        for path in os_release_paths:
+            try:
+                with open(path, "r") as f:
+                    os_release = {}
+                    for line in f:
+                        if "=" in line:
+                            key, value = line.strip().split("=", 1)
+                            os_release[key] = value.strip('"')
+                    
+                    distro_name = os_release.get("PRETTY_NAME") or os_release.get("NAME")
+                    if distro_name:
+                        break
+            except (IOError, OSError):
+                continue
+        
+        if distro_name:
+            info["os"] = distro_name
+        else:
+            # Fallback to platform info
+            os_name = platform.system()
+            os_version = platform.release()
+            info["os"] = f"{os_name} {os_version}"
+    except Exception:
+        info["os"] = "Unknown"
+    
+    return info
 
 
 def parse_vegeta_json(filepath: str) -> dict[str, Any] | None:
@@ -304,10 +362,15 @@ def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
     )
     ax_errors.set_ylim(0, 100)
 
+    # Get system info for display
+    sys_info = get_system_info()
+    sys_info_str = f"Host: {sys_info.get('cores', '?')} cores | {sys_info.get('ram', '?')} RAM | {sys_info.get('os', '?')}"
+    
     # Footer with metadata
     footer = (
         f"Tool: Vegeta v12.13.0 | "
         f"Payload: ~20KB JSON | "
+        f"{sys_info_str} | "
         f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}"
     )
     fig.text(0.5, 0.01, footer, ha="center", fontsize=8, color="#666666", style="italic")

@@ -37,7 +37,9 @@ services:
   test-runner:
     build: .
     command: sleep infinity
-    volumes: [./results:/app/results]
+    volumes:
+      - ./results:/app/results
+      - /etc/os-release:/host/etc/os-release:ro
     networks: [app-network]
 
 networks:
