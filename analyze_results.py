@@ -247,24 +247,36 @@ def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
         title="Proxy"
     )
 
-    # Plot 2: Latency (P95)
+    # Plot 2: Latency (Mean and P99)
     for i, proxy in enumerate(proxies):
-        p95s = [data[proxy].get(s, {}).get("lat_p95", 0) for s in scenarios]
+        means = [data[proxy].get(s, {}).get("lat_mean", 0) for s in scenarios]
+        p99s = [data[proxy].get(s, {}).get("lat_p99", 0) for s in scenarios]
 
+        # Plot mean latency as solid bars
         ax_latency.bar(
-            x + width * (i - 1), p95s, width,
-            label=format_proxy_label(proxy),
+            x + width * (i - 1), means, width,
+            label=f"{format_proxy_label(proxy)} (Mean)",
             color=colors.get(proxy, f"C{i}"),
             alpha=0.85,
             edgecolor="white", linewidth=1.2
         )
 
+        # Plot P99 latency as outlined overlay
+        ax_latency.bar(
+            x + width * (i - 1), p99s, width,
+            color="none",
+            edgecolor=colors.get(proxy, f"C{i}"),
+            linewidth=2.5,
+            linestyle="--",
+            label=f"{format_proxy_label(proxy)} (P99)",
+            alpha=1.0
+        )
+
     style_axis(
         ax_latency,
         ylabel="Latency (ms)",
-        title="P95 latency (lower is better)",
-        use_log=True,
-        log_min=0.1
+        title="Mean (filled) & P99 (outline) latency (lower is better)",
+        use_log=False
     )
 
     # Plot 3: Error Rate
