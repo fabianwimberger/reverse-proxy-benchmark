@@ -15,8 +15,6 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Any
 
-import subprocess
-
 try:
     import numpy as np
     import matplotlib.pyplot as plt
