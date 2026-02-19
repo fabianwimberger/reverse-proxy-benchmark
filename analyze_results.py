@@ -9,10 +9,13 @@ from __future__ import annotations
 
 import json
 import os
+import platform
 import sys
 from collections import defaultdict
 from datetime import datetime
 from typing import Any
+
+import subprocess
 
 try:
     import numpy as np
@@ -26,6 +29,61 @@ except ImportError:
 RESULTS_DIR = "./results"
 CHART_DPI = 150
 FIGURE_SIZE = (16, 10)
+
+
+def get_system_info() -> dict[str, str]:
+    """Get host system information (cores, RAM, OS)."""
+    info = {}
+    
+    # CPU cores
+    try:
+        info["cores"] = str(os.cpu_count()) if os.cpu_count() else "Unknown"
+    except Exception:
+        info["cores"] = "Unknown"
+    
+    # RAM info
+    try:
+        with open("/proc/meminfo", "r") as f:
+            for line in f:
+                if line.startswith("MemTotal:"):
+                    mem_kb = int(line.split()[1])
+                    mem_gb = mem_kb / (1024 * 1024)
+                    info["ram"] = f"{mem_gb:.1f}GB"
+                    break
+    except (IOError, OSError, ValueError):
+        info["ram"] = "Unknown"
+    
+    # OS info - try host OS first (mounted), then container's OS
+    try:
+        os_release_paths = ["/host/etc/os-release", "/etc/os-release"]
+        distro_name = None
+        
+        for path in os_release_paths:
+            try:
+                with open(path, "r") as f:
+                    os_release = {}
+                    for line in f:
+                        if "=" in line:
+                            key, value = line.strip().split("=", 1)
+                            os_release[key] = value.strip('"')
+                    
+                    distro_name = os_release.get("PRETTY_NAME") or os_release.get("NAME")
+                    if distro_name:
+                        break
+            except (IOError, OSError):
+                continue
+        
+        if distro_name:
+            info["os"] = distro_name
+        else:
+            # Fallback to platform info
+            os_name = platform.system()
+            os_version = platform.release()
+            info["os"] = f"{os_name} {os_version}"
+    except Exception:
+        info["os"] = "Unknown"
+    
+    return info
 
 
 def parse_vegeta_json(filepath: str) -> dict[str, Any] | None:
@@ -247,24 +305,36 @@ def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
         title="Proxy"
     )
 
-    # Plot 2: Latency (P95)
+    # Plot 2: Latency (Mean and P99)
     for i, proxy in enumerate(proxies):
-        p95s = [data[proxy].get(s, {}).get("lat_p95", 0) for s in scenarios]
+        means = [data[proxy].get(s, {}).get("lat_mean", 0) for s in scenarios]
+        p99s = [data[proxy].get(s, {}).get("lat_p99", 0) for s in scenarios]
 
+        # Plot mean latency as solid bars
         ax_latency.bar(
-            x + width * (i - 1), p95s, width,
-            label=format_proxy_label(proxy),
+            x + width * (i - 1), means, width,
+            label=f"{format_proxy_label(proxy)} (Mean)",
             color=colors.get(proxy, f"C{i}"),
             alpha=0.85,
             edgecolor="white", linewidth=1.2
         )
 
+        # Plot P99 latency as outlined overlay
+        ax_latency.bar(
+            x + width * (i - 1), p99s, width,
+            color="none",
+            edgecolor=colors.get(proxy, f"C{i}"),
+            linewidth=2.5,
+            linestyle="--",
+            label=f"{format_proxy_label(proxy)} (P99)",
+            alpha=1.0
+        )
+
     style_axis(
         ax_latency,
         ylabel="Latency (ms)",
-        title="P95 latency (lower is better)",
-        use_log=True,
-        log_min=0.1
+        title="Mean (filled) & P99 (outline) latency (lower is better)",
+        use_log=False
     )
 
     # Plot 3: Error Rate
@@ -292,10 +362,15 @@ def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
     )
     ax_errors.set_ylim(0, 100)
 
+    # Get system info for display
+    sys_info = get_system_info()
+    sys_info_str = f"Host: {sys_info.get('cores', '?')} cores | {sys_info.get('ram', '?')} RAM | {sys_info.get('os', '?')}"
+    
     # Footer with metadata
     footer = (
         f"Tool: Vegeta v12.13.0 | "
         f"Payload: ~20KB JSON | "
+        f"{sys_info_str} | "
         f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}"
     )
     fig.text(0.5, 0.01, footer, ha="center", fontsize=8, color="#666666", style="italic")

@@ -1,8 +1,8 @@
 .PHONY: all bench clean
 
-RATE ?= 10000
-DURATION ?= 15s
-CONNECTIONS ?= 10
+RATE ?= 5000
+DURATION ?= 20s
+CONNECTIONS ?= 5
 all: bench
 
 bench:
