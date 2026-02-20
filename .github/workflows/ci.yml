@@ -23,10 +23,6 @@ jobs:
         run: |
           pip install ruff
           ruff check analyze_results.py
-
-      - name: Ruff format check
-        run: |
-          pip install ruff
           ruff format --check analyze_results.py
 
       - name: Type check with mypy
@@ -63,7 +59,7 @@ jobs:
             echo "results directory not found"
             exit 1
           fi
-          find results -name "*.json" -type f | while read -r file; do
+          while IFS= read -r file; do
             if [ ! -s "$file" ]; then
               echo "Empty result file: $file"
               exit 1
@@ -73,7 +69,7 @@ jobs:
               echo "Invalid JSON in: $file"
               exit 1
             fi
-          done
+          done < <(find results -name "*.json" -type f)
           echo "All result files are valid"
 
       - name: Upload results

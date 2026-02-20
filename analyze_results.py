@@ -26,7 +26,6 @@ except ImportError:
 
 RESULTS_DIR = "./results"
 CHART_DPI = 150
-FIGURE_SIZE = (16, 10)
 
 
 def get_system_info() -> dict[str, str]:
@@ -175,7 +174,6 @@ def print_results(data: dict[str, dict[str, dict[str, Any]]]) -> None:
     print("\n" + "=" * 150)
     print("REVERSE PROXY BENCHMARK RESULTS (~20KB JSON Payload | Tool: Vegeta)")
     print("=" * 150)
-    print("=" * 150)
 
     all_scenarios = sorted(
         set(s for proxy_data in data.values() for s in proxy_data.keys())
@@ -269,7 +267,7 @@ def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
 
     # Shared styling function
     def style_axis(
-        ax, ylabel: str, title: str, use_log: bool = True, log_min: float = None
+        ax, ylabel: str, title: str, use_log: bool = True, log_min: float | None = None
     ) -> None:
         ax.set_xlabel("Protocol", fontsize=10, fontweight="medium")
         ax.set_ylabel(ylabel, fontsize=10, fontweight="medium")
