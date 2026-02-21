@@ -7,62 +7,61 @@ A Docker-based benchmarking suite comparing **Nginx**, **Caddy**, and **Traefik*
 
 Powered by [Vegeta](https://github.com/tsenart/vegeta), an industry-standard HTTP load testing tool.
 
-```bash
-make
-```
-
 ## Why This Project?
 
-This project was created to systematically compare modern reverse proxy solutions across different protocol versions and deployment environments. Rather than relying on vendor benchmarks or generic recommendations, I wanted reproducible, data-driven insights for infrastructure decisions.
+Reverse proxies are critical infrastructure components, but performance characteristics vary significantly between solutions and protocol versions. Rather than relying on vendor benchmarks or generic recommendations, this project provides reproducible, data-driven insights for infrastructure decisions.
 
 **Goals:**
-- Compare Nginx, Caddy, and Traefik across HTTP/1.1, HTTPS/1.1, and HTTPS/2
-- Establish baseline performance metrics for containerized deployments
-- Benchmark on different hardware (dedicated vs shared vCPUs) to understand how CPU affects proxy performance
+- Compare Nginx, Caddy, and Traefik objectively
+- Measure impact of TLS and HTTP/2 on throughput and latency
+- Establish baseline metrics for containerized deployments
+- Provide reproducible methodology for independent verification
 
-The methodology and all configurations are open-source so results can be independently verified or extended.
+## Features
 
-## Architecture
+- **Three proxies** — Nginx, Caddy, Traefik
+- **Three protocols** — HTTP/1.1, HTTPS/1.1, HTTPS/2
+- **Realistic load testing** — Vegeta with configurable rate and duration
+- **Visual results** — matplotlib charts comparing all scenarios
+- **Containerized** — fully Docker-based for reproducibility
 
-```mermaid
-graph LR
-    A[Vegeta<br/>Load Generator] -->|HTTP/HTTPS| B[Nginx]
-    A -->|HTTP/HTTPS| C[Caddy]
-    A -->|HTTP/HTTPS| D[Traefik]
-    B -->|Proxy| E[Backend]
-    C -->|Proxy| E
-    D -->|Proxy| E
-```
-
-## Why Vegeta?
-
-[Vegeta](https://github.com/tsenart/vegeta) was chosen for its:
-
-- **HTTP/2 First-Class Support** — Native HTTP/2 testing without workarounds
-- **JSON Output** — Structured data for automated analysis
-- **Static Binary** — Single binary, no dependencies
-- **Industry Proven** — Used by Cloudflare, AWS, and other major infrastructure teams
-
-## Requirements
-
-- Docker Engine 24.0+ with Docker Compose
-- Make
-- ~4GB RAM available to Docker
-- Linux/macOS (Windows via WSL2)
-
-## Usage
+## Quick Start
 
 ```bash
-make              # Run full benchmark (~2 minutes)
-make clean        # Stop and clean up
-make RATE=10000 DURATION=10s CONNECTIONS=100  # Custom parameters
+# Clone the repository
+git clone https://github.com/fabianwimberger/reverse-proxy-benchmark.git
+cd reverse-proxy-benchmark
+
+# Run full benchmark (~2 minutes)
+make
+
+# Or with custom parameters
+make RATE=10000 DURATION=10s CONNECTIONS=100
+
+# Clean up
+make clean
 ```
 
 Results are saved to `results/charts/` with timestamped PNG files.
 
+## How It Works
+
+```
+Vegeta → [Nginx|Caddy|Traefik] → Backend
+```
+
+**Load Generator:** Vegeta v12.13.0
+
+**Methodology:**
+- Attack Rate: Configurable (default 5,000 req/s)
+- Duration: Configurable (default 20s)
+- Connections: Configurable pool size (default 5)
+- Payload: ~20KB JSON file
+- Metrics: Throughput, latency percentiles (P50, P90, P95, P99), success rate
+
 ## Key Findings
 
-Based on Vegeta benchmarks with ~20KB JSON payload:
+Based on benchmarks with ~20KB JSON payload:
 
 | Scenario | Best Performer | Key Result |
 |----------|---------------|------------|
@@ -74,8 +73,6 @@ Based on Vegeta benchmarks with ~20KB JSON payload:
 - TLS overhead: 20-30% throughput reduction
 - HTTP/2 multiplexing significantly reduces per-request overhead
 
-![Benchmark Results](assets/example.png)
-
 ## Configuration
 
 | Component | Location |
@@ -83,20 +80,6 @@ Based on Vegeta benchmarks with ~20KB JSON payload:
 | Proxy configs | `configs/{nginx,caddy,traefik}/` |
 | Benchmark parameters | `Makefile` (RATE, DURATION, CONNECTIONS) |
 | Analysis script | `analyze_results.py` |
-
-## Methodology
-
-- **Load Generator**: Vegeta v12.13.0
-- **Attack Rate**: Configurable (default 5,000 req/s)
-- **Duration**: Configurable (default 20s)
-- **Connections**: Configurable pool size (default 5)
-- **Payload**: ~20KB JSON file served via Nginx backend
-- **Metrics Collected**: 
-  - Throughput (requests/sec)
-  - Latency (mean, P50, P90, P95, P99, max)
-  - Success rate
-  - Error breakdown
-- **Visualization**: matplotlib with clean, readable charts
 
 ## Manual Testing
 
@@ -107,22 +90,20 @@ docker compose up -d
 docker compose exec -T test-runner sh -c \
   'echo "GET http://nginx:80/data.json" | vegeta attack -rate=1000 -duration=5s | vegeta report'
 
-# HTTPS/1.1 test
-docker compose exec -T test-runner sh -c \
-  'echo "GET https://nginx:443/data.json" | vegeta attack -rate=1000 -duration=5s -insecure | vegeta report'
-
-# HTTP/2 test
+# HTTPS/2 test
 docker compose exec -T test-runner sh -c \
   'echo "GET https://traefik:443/data.json" | vegeta attack -rate=1000 -duration=5s -insecure -http2 | vegeta report'
-
-# Generate JSON report for analysis
-docker compose exec -T test-runner sh -c \
-  'echo "GET http://caddy:80/data.json" | vegeta attack -rate=1000 -duration=5s | vegeta report -type=json' \
-  > caddy_results.json
 
 docker compose down -v
 ```
 
+## Requirements
+
+- Docker Engine 24.0+ with Docker Compose
+- Make
+- ~4GB RAM available to Docker
+- Linux/macOS (Windows via WSL2)
+
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License — see [LICENSE](LICENSE) file.

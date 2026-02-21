@@ -2,14 +2,18 @@ name: CI
 
 on:
   push:
-    branches: [main, master, develop]
+    branches: [main, develop]
   pull_request:
-    branches: [main, master, develop]
+    branches: [main]
+
+env:
+  PYTHON_VERSION: "3.13"
 
 jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -17,35 +21,38 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.13'
+          python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Ruff
-        run: |
-          pip install ruff
-          ruff check analyze_results.py
-          ruff format --check analyze_results.py
+      - name: Install linting tools
+        run: pip install ruff mypy
+
+      - name: Lint with ruff
+        run: ruff check analyze_results.py
+
+      - name: Format check with ruff
+        run: ruff format --check analyze_results.py
 
       - name: Type check with mypy
-        run: |
-          pip install mypy
-          mypy analyze_results.py --ignore-missing-imports || true
+        run: mypy analyze_results.py --ignore-missing-imports
 
   docker:
     name: Docker Build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Build
+      - name: Build Docker image
         run: docker build -t reverse-proxy-benchmark:test .
 
-      - name: Test
+      - name: Test container starts
         run: docker run --rm reverse-proxy-benchmark:test python3 --version
 
   smoke-test:
     name: Smoke Test
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -64,7 +71,6 @@ jobs:
               echo "Empty result file: $file"
               exit 1
             fi
-            # Verify it's valid JSON
             if ! python3 -m json.tool "$file" > /dev/null 2>&1; then
               echo "Invalid JSON in: $file"
               exit 1
