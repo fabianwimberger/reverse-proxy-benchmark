@@ -48,3 +48,11 @@ clean:
 	@docker run --rm -v $(PWD)/results:/results alpine sh -c 'rm -rf /results/*' 2>/dev/null || true
 
 run: clean all
+
+lint:
+	@echo "Running linters..."
+	@ruff check analyze_results.py
+
+format:
+	@echo "Formatting code..."
+	@ruff format analyze_results.py
