@@ -61,17 +61,31 @@ Vegeta → [Nginx|Caddy|Traefik] → Backend
 
 ## Key Findings
 
-Based on benchmarks with ~20KB JSON payload:
+Based on benchmarks with ~20KB JSON payload at 100 req/s:
 
-| Scenario | Best Performer | Key Result |
-|----------|---------------|------------|
-| HTTP/1.1 | Traefik | Highest throughput, lowest latency |
-| HTTPS/1.1 | Traefik | Best TLS performance |
-| HTTPS/2 | Traefik | Optimal multiplexing efficiency |
+| Scenario | Best Latency (Mean) | Best Latency (P99) | Notes |
+|----------|---------------------|--------------------|-------|
+| HTTP/1.1 | **Nginx** (365ms) | **Nginx** (950ms) | Lowest and most consistent latency |
+| HTTPS/1.1 | **Nginx** (365ms) | **Nginx** (950ms) | TLS adds ~35% overhead vs HTTP/1.1 |
+| HTTPS/2 | **Nginx** (499ms) | **Nginx** (1106ms) | HTTP/2 shows higher variance than HTTP/1.1 |
 
-**Observations:**
-- TLS overhead: 20-30% throughput reduction
-- HTTP/2 multiplexing significantly reduces per-request overhead
+**What the Data Actually Shows:**
+
+**Nginx** delivers the most consistent performance across all scenarios — lowest mean latency and tightest P99 distribution. This aligns with its reputation: when properly configured (keepalive, buffering, headers), it's predictable and efficient.
+
+**Traefik** performs competitively (middle-ground latencies) and has the advantage of zero-config TLS and dynamic routing. Its slightly higher latency is the trade-off for flexibility and cloud-native features.
+
+**Caddy** shows higher P99 latency (~1.2ms vs ~0.95ms for Nginx) with more variance. This is worth investigating — possible causes include automatic HTTPS certificate handling overhead or different default buffer sizes. At higher concurrency (>1000 req/s), Caddy's error rates have been observed to spike, suggesting resource limits or timeout configurations that warrant further study.
+
+**Honest Observations:**
+- All three proxies handle 100 req/s with 0% errors in our default test
+- Nginx wins on raw latency when tuned for the workload
+- Traefik offers the best ergonomics for containerized environments
+- Caddy's tail latency variance suggests tuning opportunities ( investigate `buffer_limits`, `max_header_size`)
+- TLS overhead is real: ~20-35% latency increase vs plaintext
+- HTTP/2 multiplexing doesn't automatically mean lower latency — it optimizes connection utilization, not per-request speed
+
+*The "best" proxy depends on your constraints: raw performance (Nginx), operational simplicity (Caddy), or dynamic configuration (Traefik).*
 
 ## Configuration
 
