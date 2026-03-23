@@ -16,6 +16,12 @@ http:
       loadBalancer:
         servers:
           - url: "http://backend:8080"
+        serversTransport: backend-transport
+
+  serversTransports:
+    backend-transport:
+      maxIdleConnsPerHost: 64
+      idleConnTimeout: 60s
 
 tls:
   certificates:
