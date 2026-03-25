@@ -6,7 +6,7 @@
 :80 {
     reverse_proxy http://backend:8080 {
         transport http {
-            keepalive 64
+            keepalive 64s
             keepalive_idle_conns 64
             keepalive_idle_conns_per_host 64
         }
@@ -17,7 +17,7 @@
     tls /etc/caddy/ssl/cert.pem /etc/caddy/ssl/key.pem
     reverse_proxy http://backend:8080 {
         transport http {
-            keepalive 64
+            keepalive 64s
             keepalive_idle_conns 64
             keepalive_idle_conns_per_host 64
         }

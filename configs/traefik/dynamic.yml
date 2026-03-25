@@ -21,7 +21,6 @@ http:
   serversTransports:
     backend-transport:
       maxIdleConnsPerHost: 64
-      idleConnTimeout: 60s
 
 tls:
   certificates:
