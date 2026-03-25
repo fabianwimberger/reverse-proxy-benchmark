@@ -52,6 +52,8 @@ Results are saved to `results/charts/` with timestamped PNG files.
 Vegeta → [Nginx|Caddy|Traefik] → Backend
 ```
 
+**Proxies:** Nginx 1.29.7 · Caddy 2.11.2 · Traefik 3.6.11
+
 **Load Generator:** Vegeta v12.13.0
 
 **Methodology:**
@@ -63,62 +65,37 @@ Vegeta → [Nginx|Caddy|Traefik] → Backend
 
 ## Key Findings
 
-Based on benchmarks with ~20KB JSON payload at **5,000 req/s** (default parameters):
+Based on benchmarks with ~20KB JSON payload at **5,000 req/s** (default parameters), 0% errors across all scenarios:
 
-| Scenario | Best Latency (Mean) | Best Latency (P99) | Notes |
-|----------|---------------------|--------------------|-------|
-| HTTP/1.1 | **Nginx** (~2ms) | **Nginx** (~25ms) | Lowest and most consistent latency |
-| HTTPS/1.1 | **Nginx** (~3ms) | **Nginx** (~35ms) | TLS adds measurable overhead vs HTTP/1.1 |
-| HTTPS/2 | **Nginx** (~4ms) | **Nginx** (~45ms) | HTTP/2 shows higher variance than HTTP/1.1 |
+| Scenario | Best Mean Latency | Best P99 Latency | Notes |
+|----------|-------------------|------------------|-------|
+| HTTP/1.1 | **Nginx** (~0.27ms) | **Nginx** (~0.80ms) | All three within ~30% of each other |
+| HTTPS/1.1 | **Traefik** (~0.45ms) | **Traefik** (~1.41ms) | Caddy shows severe tail latency (P99 ~38ms) |
+| HTTPS/2 | **Traefik** (~0.44ms) | **Traefik** (~1.33ms) | Nginx higher latency under HTTP/2 (P99 ~9ms) |
 
 **What the Data Actually Shows:**
 
-**Nginx** delivers the most consistent performance across all scenarios — lowest mean latency and tightest P99 distribution. This aligns with its reputation: when properly configured (keepalive, buffering, headers), it's predictable and efficient.
+**Nginx** leads on raw plaintext (HTTP/1.1) performance — marginally the fastest with the tightest P99. However, it does not carry that advantage into TLS scenarios: under HTTPS/1.1 and HTTPS/2, Nginx's P99 climbs to ~9ms while Traefik stays under 1.5ms.
 
-**Traefik** performs competitively (middle-ground latencies) and has the advantage of zero-config TLS and dynamic routing. Its slightly higher latency is the trade-off for flexibility and cloud-native features.
+**Traefik** is the clear winner for TLS workloads. It posts the lowest mean and P99 latency on both HTTPS/1.1 and HTTPS/2, and its performance is highly consistent (low max values). Its slight edge in plaintext makes it competitive across all three scenarios.
 
-**Caddy** shows higher P99 latency with more variance under extreme load. At higher concurrency (>5,000 req/s), Caddy's error rates can spike on resource-constrained instances, suggesting resource limits or timeout configurations that warrant further study.
+**Caddy** performs well on HTTP/1.1 and HTTPS/2 (mean latency comparable to the others), but exhibits severe tail latency under HTTPS/1.1 — P99 of 38ms and a max of 217ms, roughly 27x higher P99 than Traefik in the same scenario. This warrants further investigation into TLS session handling or connection pool behavior.
 
 **Honest Observations:**
-- All three proxies handle moderate load (100-1000 req/s) with 0% errors on properly sized infrastructure
-- Nginx wins on raw latency when tuned for the workload
-- Traefik offers the best ergonomics for containerized environments
-- Caddy's tail latency variance suggests tuning opportunities (investigate `buffer_limits`, `max_header_size`)
-- TLS overhead is real: measurable latency increase vs plaintext
-- HTTP/2 multiplexing doesn't automatically mean lower latency — it optimizes connection utilization, not per-request speed
+- All three proxies achieved 0% errors at 5,000 req/s on this hardware — a clean result
+- Nginx wins on HTTP/1.1 raw throughput, but Traefik wins on TLS scenarios
+- Traefik offers the best ergonomics for containerized environments *and* the best TLS latency
+- Caddy's HTTPS/1.1 tail latency is a notable outlier — worth investigating before using in latency-sensitive TLS workloads
+- HTTP/2 does not automatically lower latency vs HTTPS/1.1 — Nginx actually performs comparably on both
 
-*The "best" proxy depends on your constraints: raw performance (Nginx), operational simplicity (Caddy), or dynamic configuration (Traefik).*
+*The "best" proxy depends on your constraints: plaintext throughput (Nginx), TLS performance + operational simplicity (Traefik), or auto-provisioned certificates (Caddy).*
 
-## Cloud Infrastructure Results
-
-Benchmarks were also executed on Hetzner Cloud instances to validate performance under production-like conditions:
-
-| Instance | Specs | Use Case |
-|----------|-------|----------|
-| **CX23** | 2 vCPUs (Intel), 4 GB RAM | Entry-level, cost-sensitive workloads |
-| **CPX22** | 2 vCPUs (AMD EPYC), 4 GB RAM | Balanced compute, good price/performance |
-| **CPX32** | 4 vCPUs (AMD EPYC), 8 GB RAM | Higher throughput requirements |
+## Benchmark Results
 
 <p align="center">
-  <img src="assets/hetzner-results/CX23.png" width="100%" alt="CX23 Benchmark Results">
-  <br><em>CX23 (2 vCPUs Intel, 4GB RAM) — baseline entry-level performance</em>
+  <img src="assets/local-results/benchmark.png" width="100%" alt="Benchmark Results">
+  <br><em>5,000 req/s · 20s duration · ~20KB JSON payload · 0% errors across all scenarios</em>
 </p>
-
-<p align="center">
-  <img src="assets/hetzner-results/CPX22.png" width="100%" alt="CPX22 Benchmark Results">
-  <br><em>CPX22 (2 vCPUs AMD, 4GB RAM) — balanced compute profile</em>
-</p>
-
-<p align="center">
-  <img src="assets/hetzner-results/CPX32.png" width="100%" alt="CPX32 Benchmark Results">
-  <br><em>CPX32 (4 vCPUs AMD, 8GB RAM) — higher core count reduces error rates significantly</em>
-</p>
-
-**Key observations from cloud testing:**
-- Resource constraints matter significantly at high request rates (5,000+ req/s)
-- The 2-core instances (CX23, CPX22) show higher error rates under extreme load, particularly for Nginx
-- CPX32's additional cores dramatically improve Traefik's performance, suggesting better multi-core utilization
-- HTTP/2 error rates remain elevated across all instance types under high load
 
 ## Configuration
 
