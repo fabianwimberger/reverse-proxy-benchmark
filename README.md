@@ -3,7 +3,7 @@
 [![CI](https://github.com/fabianwimberger/reverse-proxy-benchmark/actions/workflows/ci.yml/badge.svg)](https://github.com/fabianwimberger/reverse-proxy-benchmark/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A Docker-based benchmarking suite comparing **Nginx**, **Caddy**, and **Traefik** across HTTP/1.1, HTTPS/1.1, and HTTPS/2.
+A Docker-based benchmarking suite comparing **Nginx**, **Caddy**, **Traefik**, and **HAProxy** across HTTP/1.1, HTTPS/1.1, and HTTPS/2.
 
 Powered by [Vegeta](https://github.com/tsenart/vegeta), an industry-standard HTTP load testing tool.
 
@@ -12,19 +12,19 @@ Powered by [Vegeta](https://github.com/tsenart/vegeta), an industry-standard HTT
 Reverse proxies are critical infrastructure components, but performance characteristics vary significantly between solutions and protocol versions. Rather than relying on vendor benchmarks or generic recommendations, this project provides reproducible, data-driven insights for infrastructure decisions.
 
 **Goals:**
-- Compare Nginx, Caddy, and Traefik objectively
+- Compare Nginx, Caddy, Traefik, and HAProxy objectively
 - Measure impact of TLS and HTTP/2 on throughput and latency
 - Establish baseline metrics for containerized deployments
 - Provide reproducible methodology for independent verification
 
 <p align="center">
   <img src="assets/demo.gif" width="100%" alt="Benchmark Demo">
-  <br><em>Full benchmark run: build, test 9 scenarios, analyze results</em>
+  <br><em>Full benchmark run: build, test 12 scenarios, analyze results</em>
 </p>
 
 ## Features
 
-- **Three proxies** — Nginx, Caddy, Traefik
+- **Four proxies** — Nginx, Caddy, Traefik, HAProxy
 - **Three protocols** — HTTP/1.1, HTTPS/1.1, HTTPS/2
 - **Realistic load testing** — Vegeta with configurable rate and duration
 - **Visual results** — matplotlib charts comparing all scenarios
@@ -52,10 +52,10 @@ Results are saved to `results/charts/` with timestamped PNG files.
 ## How It Works
 
 ```
-Vegeta → [Nginx|Caddy|Traefik] → Backend
+Vegeta → [Nginx|Caddy|Traefik|HAProxy] → Backend
 ```
 
-**Proxies:** Nginx 1.29.7 · Caddy 2.11.2 · Traefik 3.6.11
+**Proxies:** Nginx 1.29.8 · Caddy 2.11.2 · Traefik 3.6.13 · HAProxy 3.3.6
 
 **Load Generator:** Vegeta v12.13.0
 
@@ -72,11 +72,11 @@ Based on benchmarks with ~20KB JSON payload at **5,000 req/s** (default paramete
 
 | Scenario | Best Mean Latency | Best P99 Latency | Notes |
 |----------|-------------------|------------------|-------|
-| HTTP/1.1 | **Nginx** (~0.27ms) | **Nginx** (~0.80ms) | All three within ~30% of each other |
-| HTTPS/1.1 | **Traefik** (~0.45ms) | **Traefik** (~1.41ms) | Caddy shows severe tail latency (P99 ~38ms) |
-| HTTPS/2 | **Traefik** (~0.44ms) | **Traefik** (~1.33ms) | Nginx higher latency under HTTP/2 (P99 ~9ms) |
+| HTTP/1.1 | **Caddy/HAProxy** (~0.41ms) | **HAProxy** (~1.09ms) | All four within ~5% of each other. |
+| HTTPS/1.1 | **Traefik** (~0.48ms) | **Traefik** (~1.47ms) | Nginx shows high tail latency (P99 ~24ms). |
+| HTTPS/2 | **Traefik** (~0.46ms) | **Traefik** (~1.37ms) | Traefik remains the leader in TLS scenarios. HAProxy follows closely (~1.79ms P99). |
 
-**Takeaway:** Nginx wins on raw HTTP/1.1 throughput. Traefik wins on TLS workloads (lowest P99 across both HTTPS scenarios). Caddy shows a notable P99 outlier under HTTPS/1.1 (~38ms vs Traefik's ~1.4ms). All three achieved 0% errors at 5,000 req/s.
+**Takeaway:** Performance is extremely tight on HTTP/1.1 across all proxies. Traefik continues to dominate TLS workloads (HTTPS/1.1 and HTTPS/2) with the lowest mean and P99 latencies. HAProxy shows excellent consistency across all protocols, while Nginx experienced higher tail latencies in TLS scenarios in this environment. All four achieved 100% success rate at 5,000 req/s.
 
 *The "best" proxy depends on your constraints: plaintext throughput (Nginx), TLS performance + operational simplicity (Traefik), or auto-provisioned certificates (Caddy).*
 
@@ -91,7 +91,7 @@ Based on benchmarks with ~20KB JSON payload at **5,000 req/s** (default paramete
 
 | Component | Location |
 |-----------|----------|
-| Proxy configs | `configs/{nginx,caddy,traefik}/` |
+| Proxy configs | `configs/{nginx,caddy,traefik,haproxy}/` |
 | Benchmark parameters | `Makefile` (RATE, DURATION, CONNECTIONS) |
 | Analysis script | `analyze_results.py` |
 
@@ -111,3 +111,4 @@ MIT License — see [LICENSE](LICENSE) file.
 | Nginx | [BSD-2-Clause](https://nginx.org/LICENSE) | https://nginx.org/ |
 | Caddy | [Apache-2.0](https://github.com/caddyserver/caddy/blob/master/LICENSE) | https://github.com/caddyserver/caddy |
 | Traefik | [MIT](https://github.com/traefik/traefik/blob/master/LICENSE.md) | https://github.com/traefik/traefik |
+| HAProxy | [GPL-2.0](http://www.haproxy.org/download/2.4/src/LICENSE) | http://www.haproxy.org/ |

@@ -13,6 +13,7 @@ bench:
 		req -x509 -nodes -newkey rsa:4096 \
 		-keyout /ssl/key.pem -out /ssl/cert.pem -days 365 \
 		-subj "/CN=localhost" 2>/dev/null
+	@docker run --rm -v reverse-proxy-benchmark_ssl_certs:/ssl alpine sh -c "cat /ssl/cert.pem /ssl/key.pem > /ssl/haproxy.pem"
 	@echo "Starting services..."
 	@docker compose up -d
 	@sleep 8
@@ -39,6 +40,9 @@ run-benchmarks:
 		bench traefik http://traefik:80/data.json "" http; \
 		bench traefik https://traefik:443/data.json "-insecure" https; \
 		bench traefik https://traefik:443/data.json "-insecure -http2" https_http2; \
+		bench haproxy http://haproxy:80/data.json "" http; \
+		bench haproxy https://haproxy:443/data.json "-insecure" https; \
+		bench haproxy https://haproxy:443/data.json "-insecure -http2" https_http2; \
 	'
 
 clean:
