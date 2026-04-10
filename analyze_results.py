@@ -243,8 +243,8 @@ def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
 
     # Okabe-Ito colorblind-friendly palette
     colors = {
-        "caddy": "#E69F00",    # Orange
-        "nginx": "#56B4E9",    # Sky blue
+        "caddy": "#E69F00",  # Orange
+        "nginx": "#56B4E9",  # Sky blue
         "traefik": "#009E73",  # Bluish green
         "haproxy": "#CC79A7",  # Reddish purple
     }
