@@ -14,12 +14,16 @@ bench:
 		-keyout /ssl/key.pem -out /ssl/cert.pem -days 365 \
 		-subj "/CN=localhost" 2>/dev/null
 	@docker run --rm -v reverse-proxy-benchmark_ssl_certs:/ssl alpine sh -c "cat /ssl/cert.pem /ssl/key.pem > /ssl/haproxy.pem"
-	@echo "Starting services..."
+	@echo "Running unrestricted benchmarks..."
 	@docker compose up -d
 	@sleep 8
-	@echo "Running benchmarks..."
 	@mkdir -p results
-	@$(MAKE) run-benchmarks
+	@$(MAKE) run-benchmarks SUFFIX=""
+	@docker compose down
+	@echo "Running restricted (2 cores, 4GB) benchmarks..."
+	@docker compose -f docker-compose.yml -f docker-compose.restricted.yml up -d
+	@sleep 8
+	@$(MAKE) run-benchmarks SUFFIX="_restricted"
 	@echo "Analyzing..."
 	@docker compose exec -T test-runner python3 /app/analyze_results.py
 	@echo "Done. Results in results/charts/"
@@ -28,8 +32,8 @@ run-benchmarks:
 	@docker compose exec -T test-runner bash -c ' \
 		rate="$(RATE)"; dur="$(DURATION)"; conn="$(CONNECTIONS)"; \
 		bench() { \
-			mkdir -p "/app/results/$$1"; \
-			echo "GET $$2" | vegeta attack -rate=$$rate -duration=$$dur -connections=$$conn $$3 | vegeta report -type=json > "/app/results/$$1/$$4.json"; \
+			mkdir -p "/app/results/$$1$(SUFFIX)"; \
+			echo "GET $$2" | vegeta attack -rate=$$rate -duration=$$dur -connections=$$conn $$3 | vegeta report -type=json > "/app/results/$$1$(SUFFIX)/$$4.json"; \
 		}; \
 		bench nginx http://nginx:80/data.json "" http; \
 		bench nginx https://nginx:443/data.json "-insecure" https; \

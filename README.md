@@ -78,6 +78,13 @@ Based on benchmarks with ~20KB JSON payload at **5,000 req/s** (default paramete
 
 **Takeaway:** Performance is extremely tight on HTTP/1.1 across all proxies. Traefik continues to dominate TLS workloads (HTTPS/1.1 and HTTPS/2) with the lowest mean and P99 latencies. HAProxy shows excellent consistency across all protocols, while Nginx experienced higher tail latencies in TLS scenarios in this environment. All four achieved 100% success rate at 5,000 req/s.
 
+### Restricted vs Unrestricted
+The benchmark is run twice to compare how proxies handle resource constraints:
+1. **Unrestricted**: Proxies can use all available host resources.
+2. **Restricted**: Each proxy is limited to **2 CPU cores and 4GB RAM** via Docker Compose (`docker-compose.restricted.yml`).
+
+This helps identify efficiency under limited compute budgets.
+
 *The "best" proxy depends on your constraints: plaintext throughput (Nginx), TLS performance + operational simplicity (Traefik), or auto-provisioned certificates (Caddy).*
 
 ## Benchmark Results
