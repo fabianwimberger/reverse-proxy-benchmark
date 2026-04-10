@@ -12,16 +12,16 @@ bench:
 	@docker run --rm -v reverse-proxy-benchmark_ssl_certs:/ssl alpine/openssl \
 		req -x509 -nodes -newkey rsa:4096 \
 		-keyout /ssl/key.pem -out /ssl/cert.pem -days 365 \
-		-subj "/CN=localhost" 2>/dev/null
-	@docker run --rm -v reverse-proxy-benchmark_ssl_certs:/ssl alpine sh -c "cat /ssl/cert.pem /ssl/key.pem > /ssl/haproxy.pem"
+		-subj "/CN=localhost" >/dev/null 2>&1
+	@docker run --rm -v reverse-proxy-benchmark_ssl_certs:/ssl alpine sh -c "cat /ssl/cert.pem /ssl/key.pem > /ssl/haproxy.pem" >/dev/null 2>&1
 	@echo "Running unrestricted benchmarks..."
-	@docker compose up -d 2>/dev/null
+	@docker compose up -d >/dev/null 2>&1
 	@sleep 8
 	@mkdir -p results
 	@$(MAKE) --no-print-directory run-benchmarks SUFFIX=""
 	@docker compose down >/dev/null 2>&1
 	@echo "Running restricted (2 cores, 4GB) benchmarks..."
-	@docker compose -f docker-compose.yml -f docker-compose.restricted.yml up -d 2>/dev/null
+	@docker compose -f docker-compose.yml -f docker-compose.restricted.yml up -d >/dev/null 2>&1
 	@sleep 8
 	@$(MAKE) --no-print-directory run-benchmarks SUFFIX="_restricted"
 	@echo "Analyzing..."
@@ -50,10 +50,10 @@ run-benchmarks:
 	'
 
 clean:
-	@docker compose down -v 2>/dev/null || true
-	@docker volume rm -f reverse-proxy-benchmark_ssl_certs 2>/dev/null || true
+	@docker compose down -v >/dev/null 2>&1 || true
+	@docker volume rm -f reverse-proxy-benchmark_ssl_certs >/dev/null 2>&1 || true
 	@echo "Cleaning results..."
-	@docker run --rm -v $(PWD)/results:/results alpine sh -c 'rm -rf /results/*' 2>/dev/null || true
+	@docker run --rm -v $(PWD)/results:/results alpine sh -c 'rm -rf /results/*' >/dev/null 2>&1 || true
 
 run: clean all
 
