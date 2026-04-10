@@ -55,7 +55,7 @@ Results are saved to `results/charts/` with timestamped PNG files.
 Vegeta → [Nginx|Caddy|Traefik|HAProxy] → Backend
 ```
 
-**Proxies:** Nginx 1.29.8 · Caddy 2.11.2 · Traefik 3.6.13 · HAProxy 3.3.6
+**Proxies:** Nginx 1.28.3 · Caddy 2.11.2 · Traefik 3.6.13 · HAProxy 3.3.6
 
 **Load Generator:** Vegeta v12.13.0
 
