@@ -32,6 +32,7 @@ run-benchmarks:
 	@docker compose exec -T test-runner bash -c ' \
 		rate="$(RATE)"; dur="$(DURATION)"; conn="$(CONNECTIONS)"; \
 		bench() { \
+			echo "  $$1  $$4"; \
 			mkdir -p "/app/results/$$1$(SUFFIX)"; \
 			echo "GET $$2" | vegeta attack -rate=$$rate -duration=$$dur -connections=$$conn $$3 | vegeta report -type=json > "/app/results/$$1$(SUFFIX)/$$4.json"; \
 		}; \
