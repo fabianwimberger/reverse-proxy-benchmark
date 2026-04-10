@@ -236,8 +236,8 @@ def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
 
     # Okabe-Ito colorblind-friendly palette
     base_colors = {
-        "caddy": "#E69F00",    # Orange
-        "nginx": "#56B4E9",    # Sky blue
+        "caddy": "#E69F00",  # Orange
+        "nginx": "#56B4E9",  # Sky blue
         "traefik": "#009E73",  # Bluish green
         "haproxy": "#CC79A7",  # Reddish purple
     }
@@ -328,7 +328,6 @@ def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
     # Plot 2: Latency (Mean and P99)
     for i, proxy in enumerate(proxies):
         means = [data[proxy].get(s, {}).get("lat_mean", 0) for s in scenarios]
-        p99s = [data[proxy].get(s, {}).get("lat_p99", 0) for s in scenarios]
         hatch = "///" if proxy.endswith("_restricted") else ""
 
         # Plot mean latency as solid/hatched bars
@@ -378,7 +377,6 @@ def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
         use_log=False,
     )
     ax_errors.set_ylim(0, 100)
-
 
     # Get system info for display
     sys_info = get_system_info()
