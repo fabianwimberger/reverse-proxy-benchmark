@@ -15,15 +15,15 @@ bench:
 		-subj "/CN=localhost" 2>/dev/null
 	@docker run --rm -v reverse-proxy-benchmark_ssl_certs:/ssl alpine sh -c "cat /ssl/cert.pem /ssl/key.pem > /ssl/haproxy.pem"
 	@echo "Running unrestricted benchmarks..."
-	@docker compose up -d
+	@docker compose up -d 2>/dev/null
 	@sleep 8
 	@mkdir -p results
-	@$(MAKE) run-benchmarks SUFFIX=""
-	@docker compose down
+	@$(MAKE) --no-print-directory run-benchmarks SUFFIX=""
+	@docker compose down >/dev/null 2>&1
 	@echo "Running restricted (2 cores, 4GB) benchmarks..."
-	@docker compose -f docker-compose.yml -f docker-compose.restricted.yml up -d
+	@docker compose -f docker-compose.yml -f docker-compose.restricted.yml up -d 2>/dev/null
 	@sleep 8
-	@$(MAKE) run-benchmarks SUFFIX="_restricted"
+	@$(MAKE) --no-print-directory run-benchmarks SUFFIX="_restricted"
 	@echo "Analyzing..."
 	@docker compose exec -T test-runner python3 /app/analyze_results.py
 	@echo "Done. Results in results/charts/"
