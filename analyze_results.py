@@ -210,20 +210,13 @@ def print_results(data: dict[str, dict[str, dict[str, Any]]]) -> None:
 
 def format_proxy_label(proxy: str) -> str:
     """Format proxy name for display in legend."""
+    if proxy.endswith("_restricted"):
+        return f"{proxy[:-11].capitalize()} (Restricted)"
     return proxy.capitalize()
 
 
 def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
-    """Generate benchmark comparison charts.
-
-    Design principles:
-    - 1x3 layout focusing on key metrics: Throughput, Latency, Error Rate
-    - Colorblind-friendly palette (Okabe-Ito)
-    - Clear axis labeling with units
-    - Grouped by proxy type for easy comparison
-    - Log scales clearly indicated with visual grid lines
-    - Minimal clutter - no redundant labels
-    """
+    """Generate benchmark comparison charts."""
     if not HAS_PLOT:
         print("\nNote: Install matplotlib and numpy for chart generation")
         return
@@ -242,19 +235,33 @@ def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
     scenarios = [s for s in scenario_order if s in scenarios]
 
     # Okabe-Ito colorblind-friendly palette
-    colors = {
+    base_colors = {
         "caddy": "#E69F00",  # Orange
         "nginx": "#56B4E9",  # Sky blue
         "traefik": "#009E73",  # Bluish green
+        "haproxy": "#CC79A7",  # Reddish purple
     }
 
+    # Generate full color mapping including restricted versions
+    colors = {}
+    for p in proxies:
+        base_p = p.replace("_restricted", "")
+        if base_p in base_colors:
+            if p.endswith("_restricted"):
+                # Use a darker/different shade or handled by alpha
+                colors[p] = base_colors[base_p]
+            else:
+                colors[p] = base_colors[base_p]
+        else:
+            colors[p] = f"C{proxies.index(p)}"
+
     # Single row layout: Throughput | Latency | Error Rate
-    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+    fig, axes = plt.subplots(1, 3, figsize=(20, 6))
     fig.patch.set_facecolor("white")
 
     # Clean title without redundant information
     fig.suptitle(
-        "Reverse Proxy Performance Benchmark",
+        "Reverse Proxy Performance Comparison: Unrestricted vs Restricted (2 Cores, 4GB RAM)",
         fontsize=14,
         fontweight="semibold",
         y=0.98,
@@ -263,7 +270,8 @@ def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
     ax_throughput, ax_latency, ax_errors = axes
 
     x = np.arange(len(scenarios))
-    width = 0.25
+    num_proxies = len(proxies)
+    width = 0.8 / num_proxies  # Dynamically calculate width
 
     # Shared styling function
     def style_axis(
@@ -288,15 +296,17 @@ def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
     # Plot 1: Throughput (Successful requests per second)
     for i, proxy in enumerate(proxies):
         values = [data[proxy].get(s, {}).get("throughput", 0) for s in scenarios]
+        hatch = "///" if proxy.endswith("_restricted") else ""
         ax_throughput.bar(
-            x + width * (i - 1),
+            x + width * (i - (num_proxies - 1) / 2),
             values,
             width,
             label=format_proxy_label(proxy),
-            color=colors.get(proxy, f"C{i}"),
-            alpha=0.85,
+            color=colors.get(proxy),
+            alpha=0.85 if not proxy.endswith("_restricted") else 0.6,
             edgecolor="white",
-            linewidth=1.2,
+            linewidth=1.0,
+            hatch=hatch,
         )
 
     style_axis(
@@ -307,9 +317,10 @@ def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
         log_min=0.1,
     )
     ax_throughput.legend(
-        loc="lower left",
+        loc="upper left",
+        bbox_to_anchor=(1, 1),
         framealpha=0.95,
-        fontsize=9,
+        fontsize=8,
         edgecolor="#cccccc",
         title="Proxy",
     )
@@ -317,58 +328,46 @@ def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
     # Plot 2: Latency (Mean and P99)
     for i, proxy in enumerate(proxies):
         means = [data[proxy].get(s, {}).get("lat_mean", 0) for s in scenarios]
-        p99s = [data[proxy].get(s, {}).get("lat_p99", 0) for s in scenarios]
+        hatch = "///" if proxy.endswith("_restricted") else ""
 
-        # Plot mean latency as solid bars
+        # Plot mean latency as solid/hatched bars
         ax_latency.bar(
-            x + width * (i - 1),
+            x + width * (i - (num_proxies - 1) / 2),
             means,
             width,
             label=f"{format_proxy_label(proxy)} (Mean)",
-            color=colors.get(proxy, f"C{i}"),
-            alpha=0.85,
+            color=colors.get(proxy),
+            alpha=0.85 if not proxy.endswith("_restricted") else 0.6,
             edgecolor="white",
-            linewidth=1.2,
-        )
-
-        # Plot P99 latency as outlined overlay
-        ax_latency.bar(
-            x + width * (i - 1),
-            p99s,
-            width,
-            color="none",
-            edgecolor=colors.get(proxy, f"C{i}"),
-            linewidth=2.5,
-            linestyle="--",
-            label=f"{format_proxy_label(proxy)} (P99)",
-            alpha=1.0,
+            linewidth=1.0,
+            hatch=hatch,
         )
 
     style_axis(
         ax_latency,
         ylabel="Latency (ms)",
-        title="Mean (filled) & P99 (outline) latency (lower is better)",
+        title="Mean latency (lower is better)",
         use_log=False,
     )
 
     # Plot 3: Error Rate
-    all_err_rates = []
     for i, proxy in enumerate(proxies):
         err_rates = []
         for s in scenarios:
             m = data[proxy].get(s, {})
             err_rates.append(calculate_error_rate(m))
-        all_err_rates.extend(err_rates)
 
+        hatch = "///" if proxy.endswith("_restricted") else ""
         ax_errors.bar(
-            x + width * (i - 1),
+            x + width * (i - (num_proxies - 1) / 2),
             err_rates,
             width,
             label=format_proxy_label(proxy),
-            color=colors.get(proxy, f"C{i}"),
-            alpha=0.85,
+            color=colors.get(proxy),
+            alpha=0.85 if not proxy.endswith("_restricted") else 0.6,
             edgecolor="white",
-            linewidth=1.2,
+            linewidth=1.0,
+            hatch=hatch,
         )
 
     style_axis(
