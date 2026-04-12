@@ -180,7 +180,7 @@ def print_results(data: dict[str, dict[str, dict[str, Any]]]) -> None:
     )
 
     for scenario in all_scenarios:
-        print(f"\n{format_scenario_name(scenario).replace(chr(10), ' ')}")
+        print(f"\n{format_scenario_name(scenario)}")
         print("-" * 150)
         print(
             f"{'Proxy':<18} {'Req/s':>10} {'Throughput':>12} {'Mean(ms)':>10} "
