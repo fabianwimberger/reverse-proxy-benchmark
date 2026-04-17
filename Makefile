@@ -3,17 +3,21 @@
 RATE ?= 5000
 DURATION ?= 20s
 CONNECTIONS ?= 5
+
+COMPOSE_PROJECT := $(shell docker compose config 2>/dev/null | awk '/^name:/{print $$2}')
+SSL_VOLUME := $(COMPOSE_PROJECT)_ssl_certs
+
 all: bench
 
 bench:
 	@echo "Building..."
 	@docker compose build -q
 	@echo "Generating SSL certificates..."
-	@docker run --rm -v reverse-proxy-benchmark_ssl_certs:/ssl alpine/openssl \
+	@docker run --rm -v $(SSL_VOLUME):/ssl alpine/openssl \
 		req -x509 -nodes -newkey rsa:4096 \
 		-keyout /ssl/key.pem -out /ssl/cert.pem -days 365 \
 		-subj "/CN=localhost" >/dev/null 2>&1
-	@docker run --rm -v reverse-proxy-benchmark_ssl_certs:/ssl alpine sh -c "cat /ssl/cert.pem /ssl/key.pem > /ssl/haproxy.pem" >/dev/null 2>&1
+	@docker run --rm -v $(SSL_VOLUME):/ssl alpine sh -c "cat /ssl/cert.pem /ssl/key.pem > /ssl/haproxy.pem" >/dev/null 2>&1
 	@echo "==> Unrestricted benchmarks"
 	@docker compose up -d >/dev/null 2>&1
 	@mkdir -p results
@@ -33,7 +37,7 @@ wait-ready:
 		printf "  waiting for proxies"; \
 		for proxy in nginx caddy traefik haproxy; do \
 			ok=0; \
-			for i in $$(seq 1 30); do \
+			for i in $$(seq 1 60); do \
 				if curl -fsSk -o /dev/null --max-time 1 "http://$$proxy/data.json" >/dev/null 2>&1; then ok=1; break; fi; \
 				printf "."; sleep 1; \
 			done; \
@@ -71,7 +75,7 @@ run-benchmarks:
 
 clean:
 	@docker compose down -v >/dev/null 2>&1 || true
-	@docker volume rm -f reverse-proxy-benchmark_ssl_certs >/dev/null 2>&1 || true
+	@docker volume rm -f $(SSL_VOLUME) >/dev/null 2>&1 || true
 	@echo "Cleaning results..."
 	@docker run --rm -v $(PWD)/results:/results alpine sh -c 'rm -rf /results/*' >/dev/null 2>&1 || true
 
