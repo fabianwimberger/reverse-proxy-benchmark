@@ -34,7 +34,7 @@ wait-ready:
 		for proxy in nginx caddy traefik haproxy; do \
 			ok=0; \
 			for i in $$(seq 1 30); do \
-				if curl -fsSk -o /dev/null --max-time 1 "http://$$proxy/data.json"; then ok=1; break; fi; \
+				if curl -fsSk -o /dev/null --max-time 1 "http://$$proxy/data.json" >/dev/null 2>&1; then ok=1; break; fi; \
 				printf "."; sleep 1; \
 			done; \
 			if [ "$$ok" -ne 1 ]; then echo " FAIL ($$proxy)"; exit 1; fi; \
