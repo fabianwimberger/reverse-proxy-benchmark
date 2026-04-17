@@ -49,6 +49,10 @@ services:
     networks: [app-network]
     depends_on:
       - backend
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
 
   test-runner:
     build: .
