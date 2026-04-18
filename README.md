@@ -7,15 +7,9 @@ A Docker-based benchmarking suite comparing **Nginx**, **Caddy**, **Traefik**, a
 
 Powered by [Vegeta](https://github.com/tsenart/vegeta), an industry-standard HTTP load testing tool.
 
-## Why This Project?
+## Background
 
-Reverse proxies are critical infrastructure components, but performance characteristics vary significantly between solutions and protocol versions. Rather than relying on vendor benchmarks or generic recommendations, this project provides reproducible, data-driven insights for infrastructure decisions.
-
-**Goals:**
-- Compare Nginx, Caddy, Traefik, and HAProxy objectively
-- Measure impact of TLS and HTTP/2 on throughput and latency
-- Establish baseline metrics for containerized deployments
-- Provide reproducible methodology for independent verification
+Vendor benchmarks are not neutral and everyone else's run on different hardware. This runs Nginx, Caddy, Traefik, and HAProxy on the same containerised setup under Vegeta, across HTTP/1.1, HTTPS/1.1, and HTTPS/2, and charts the output. Run it on whatever box you are evaluating to get numbers for your own infrastructure.
 
 <p align="center">
   <img src="assets/demo.gif" width="100%" alt="Benchmark Demo">
