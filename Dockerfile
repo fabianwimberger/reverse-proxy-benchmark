@@ -20,7 +20,7 @@ WORKDIR /app
 
 # Install Python dependencies
 COPY requirements.txt /app/requirements.txt
-RUN pip3 install --break-system-packages -r /app/requirements.txt || pip3 install -r /app/requirements.txt
+RUN pip3 install --break-system-packages -r /app/requirements.txt
 
 COPY analyze_results.py /app/analyze_results.py
 COPY scripts/summarize.py /app/summarize.py
