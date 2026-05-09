@@ -1,25 +1,13 @@
 services:
   nginx:
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 4G
+    cpus: '2.0'
+    mem_limit: 4G
   caddy:
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 4G
+    cpus: '2.0'
+    mem_limit: 4G
   traefik:
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 4G
+    cpus: '2.0'
+    mem_limit: 4G
   haproxy:
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 4G
+    cpus: '2.0'
+    mem_limit: 4G

@@ -2,7 +2,8 @@
 
 RATE ?= 5000
 DURATION ?= 20s
-CONNECTIONS ?= 5
+CONNECTIONS ?= 64
+WARMUP_DURATION ?= 5s
 
 COMPOSE_PROJECT := $(shell docker compose config 2>/dev/null | awk '/^name:/{print $$2}')
 SSL_VOLUME := $(COMPOSE_PROJECT)_ssl_certs
@@ -13,20 +14,22 @@ bench:
 	@echo "Building..."
 	@docker compose build -q
 	@echo "Generating SSL certificates..."
-	@docker run --rm -v $(SSL_VOLUME):/ssl alpine/openssl \
+	@docker run --rm -v $(SSL_VOLUME):/ssl alpine/openssl:3.5.0 \
 		req -x509 -nodes -newkey rsa:4096 \
 		-keyout /ssl/key.pem -out /ssl/cert.pem -days 365 \
 		-subj "/CN=localhost" >/dev/null 2>&1
-	@docker run --rm -v $(SSL_VOLUME):/ssl alpine sh -c "cat /ssl/cert.pem /ssl/key.pem > /ssl/haproxy.pem" >/dev/null 2>&1
+	@docker run --rm -v $(SSL_VOLUME):/ssl alpine:3.21 sh -c "cat /ssl/cert.pem /ssl/key.pem > /ssl/haproxy.pem" >/dev/null 2>&1
 	@echo "==> Unrestricted benchmarks"
 	@docker compose up -d >/dev/null 2>&1
 	@mkdir -p results
 	@$(MAKE) --no-print-directory wait-ready
+	@$(MAKE) --no-print-directory run-warmup
 	@$(MAKE) --no-print-directory run-benchmarks SUFFIX=""
 	@docker compose down >/dev/null 2>&1
 	@echo "==> Restricted benchmarks (2 cores, 4GB)"
 	@docker compose -f docker-compose.yml -f docker-compose.restricted.yml up -d >/dev/null 2>&1
 	@$(MAKE) --no-print-directory wait-ready
+	@$(MAKE) --no-print-directory run-warmup
 	@$(MAKE) --no-print-directory run-benchmarks SUFFIX="_restricted"
 	@echo "==> Analyzing"
 	@docker compose exec -T test-runner python3 /app/analyze_results.py
@@ -41,9 +44,26 @@ wait-ready:
 				if curl -fsSk -o /dev/null --max-time 1 "http://$$proxy/data.json" >/dev/null 2>&1; then ok=1; break; fi; \
 				printf "."; sleep 1; \
 			done; \
-			if [ "$$ok" -ne 1 ]; then echo " FAIL ($$proxy)"; exit 1; fi; \
+			if [ "$$ok" -ne 1 ]; then echo " FAIL ($$proxy HTTP)"; exit 1; fi; \
+			ok=0; \
+			for i in $$(seq 1 60); do \
+				if curl -fsSk -o /dev/null --max-time 1 "https://$$proxy/data.json" >/dev/null 2>&1; then ok=1; break; fi; \
+				printf "."; sleep 1; \
+			done; \
+			if [ "$$ok" -ne 1 ]; then echo " FAIL ($$proxy HTTPS)"; exit 1; fi; \
 		done; \
 		echo " ready"; \
+	'
+
+run-warmup:
+	@docker compose exec -T test-runner bash -c ' \
+		rate="$(RATE)"; dur="$(WARMUP_DURATION)"; conn="$(CONNECTIONS)"; \
+		printf "  Warming up..."; \
+		for proxy in nginx caddy traefik haproxy; do \
+			echo "GET http://$$proxy:80/data.json" | vegeta attack -rate=$$rate -duration=$$dur -connections=$$conn >/dev/null 2>&1; \
+			echo "GET https://$$proxy:443/data.json" | vegeta attack -rate=$$rate -duration=$$dur -connections=$$conn -insecure -http2 >/dev/null 2>&1; \
+		done; \
+		echo " done"; \
 	'
 
 run-benchmarks:
@@ -59,18 +79,12 @@ run-benchmarks:
 			python3 /app/summarize.py "/app/results/$$1$(SUFFIX)/$$4.json"; \
 			rm -f "$$tmp"; \
 		}; \
-		bench nginx http://nginx:80/data.json "" http; \
-		bench nginx https://nginx:443/data.json "-insecure" https; \
-		bench nginx https://nginx:443/data.json "-insecure -http2" https_http2; \
-		bench caddy http://caddy:80/data.json "" http; \
-		bench caddy https://caddy:443/data.json "-insecure" https; \
-		bench caddy https://caddy:443/data.json "-insecure -http2" https_http2; \
-		bench traefik http://traefik:80/data.json "" http; \
-		bench traefik https://traefik:443/data.json "-insecure" https; \
-		bench traefik https://traefik:443/data.json "-insecure -http2" https_http2; \
-		bench haproxy http://haproxy:80/data.json "" http; \
-		bench haproxy https://haproxy:443/data.json "-insecure" https; \
-		bench haproxy https://haproxy:443/data.json "-insecure -http2" https_http2; \
+		scenarios="nginx http://nginx:80/data.json \"\" http\nnginx https://nginx:443/data.json -insecure https\nnginx https://nginx:443/data.json \"-insecure -http2\" https_http2\ncaddy http://caddy:80/data.json \"\" http\ncaddy https://caddy:443/data.json -insecure https\ncaddy https://caddy:443/data.json \"-insecure -http2\" https_http2\ntraefik http://traefik:80/data.json \"\" http\ntraefik https://traefik:443/data.json -insecure https\ntraefik https://traefik:443/data.json \"-insecure -http2\" https_http2\nhaproxy http://haproxy:80/data.json \"\" http\nhaproxy https://haproxy:443/data.json -insecure https\nhaproxy https://haproxy:443/data.json \"-insecure -http2\" https_http2"; \
+		scenarios=$$(echo "$$scenarios" | shuf); \
+		while IFS= read -r line; do \
+			set -- $$line; \
+			bench "$$1" "$$2" "$$3" "$$4"; \
+		done <<< "$$scenarios"; \
 	'
 
 clean:
