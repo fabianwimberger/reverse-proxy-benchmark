@@ -12,7 +12,7 @@ import os
 import platform
 import sys
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 try:
@@ -140,12 +140,12 @@ def load_data() -> dict[str, dict[str, dict[str, Any]]]:
         print(f"Error: Results directory '{RESULTS_DIR}' not found", file=sys.stderr)
         return data
 
-    for proxy in os.listdir(RESULTS_DIR):
+    for proxy in sorted(os.listdir(RESULTS_DIR)):
         proxy_path = os.path.join(RESULTS_DIR, proxy)
         if not os.path.isdir(proxy_path):
             continue
 
-        for filename in os.listdir(proxy_path):
+        for filename in sorted(os.listdir(proxy_path)):
             if not filename.endswith(".json"):
                 continue
 
@@ -221,7 +221,7 @@ def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
         print("\nNote: Install matplotlib and numpy for chart generation")
         return
 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     chart_dir = os.path.join(RESULTS_DIR, "charts")
     os.makedirs(chart_dir, exist_ok=True)
 
@@ -247,11 +247,7 @@ def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
     for p in proxies:
         base_p = p.replace("_restricted", "")
         if base_p in base_colors:
-            if p.endswith("_restricted"):
-                # Use a darker/different shade or handled by alpha
-                colors[p] = base_colors[base_p]
-            else:
-                colors[p] = base_colors[base_p]
+            colors[p] = base_colors[base_p]
         else:
             colors[p] = f"C{proxies.index(p)}"
 
@@ -387,7 +383,7 @@ def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
         f"Tool: Vegeta v12.13.0 | "
         f"Payload: ~20KB JSON | "
         f"{sys_info_str} | "
-        f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+        f"Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"
     )
     fig.text(
         0.5, 0.01, footer, ha="center", fontsize=8, color="#666666", style="italic"
