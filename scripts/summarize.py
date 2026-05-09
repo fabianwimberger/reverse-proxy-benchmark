@@ -7,6 +7,7 @@ import sys
 with open(sys.argv[1]) as f:
     d = json.load(f)
 
+# Vegeta reports success as a 0..1 fraction.
 ok = d["success"] * 100
 p50 = d["latencies"]["50th"] / 1e6
 p99 = d["latencies"]["99th"] / 1e6
