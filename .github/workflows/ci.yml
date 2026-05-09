@@ -62,8 +62,14 @@ jobs:
 
       - name: Verify output files
         run: |
+          expected=24
           if [ ! -d "results" ]; then
             echo "results directory not found"
+            exit 1
+          fi
+          count="$(find results -name "*.json" -type f | wc -l)"
+          if [ "$count" -ne "$expected" ]; then
+            echo "Expected $expected result files, found $count"
             exit 1
           fi
           while IFS= read -r file; do
@@ -71,10 +77,28 @@ jobs:
               echo "Empty result file: $file"
               exit 1
             fi
-            if ! python3 -m json.tool "$file" > /dev/null 2>&1; then
-              echo "Invalid JSON in: $file"
-              exit 1
-            fi
+            python3 - "$file" <<'PY'
+          import json
+          import sys
+
+          path = sys.argv[1]
+          with open(path, encoding="utf-8") as f:
+              data = json.load(f)
+
+          failures = []
+          if data.get("requests", 0) <= 0:
+              failures.append("no requests")
+          if data.get("rate", 0) <= 0:
+              failures.append("zero rate")
+          if data.get("throughput", 0) <= 0:
+              failures.append("zero throughput")
+          if "https_http2.json" in path and data.get("success", 0) <= 0:
+              failures.append("HTTP/2 scenario has zero success")
+
+          if failures:
+              print(f"{path}: {', '.join(failures)}")
+              sys.exit(1)
+          PY
           done < <(find results -name "*.json" -type f)
           echo "All result files are valid"
 

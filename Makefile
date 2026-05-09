@@ -14,11 +14,16 @@ bench:
 	@echo "Building..."
 	@docker compose build -q
 	@echo "Generating SSL certificates..."
-	@docker run --rm -v $(SSL_VOLUME):/ssl alpine/openssl:3.5.0 \
-		req -x509 -nodes -newkey rsa:4096 \
-		-keyout /ssl/key.pem -out /ssl/cert.pem -days 365 \
-		-subj "/CN=localhost" >/dev/null 2>&1
-	@docker run --rm -v $(SSL_VOLUME):/ssl alpine:3.21 sh -c "cat /ssl/cert.pem /ssl/key.pem > /ssl/haproxy.pem" >/dev/null 2>&1
+	@docker run --rm -v $(SSL_VOLUME):/ssl --entrypoint sh alpine/openssl:3.5.0 -c '\
+		if [ ! -s /ssl/cert.pem ] || [ ! -s /ssl/key.pem ]; then \
+			openssl req -x509 -nodes -newkey rsa:4096 \
+				-keyout /ssl/key.pem -out /ssl/cert.pem -days 365 \
+				-subj "/CN=localhost" >/dev/null 2>&1; \
+		fi'
+	@docker run --rm -v $(SSL_VOLUME):/ssl alpine:3.21 sh -c '\
+		if [ ! -s /ssl/haproxy.pem ] || [ /ssl/cert.pem -nt /ssl/haproxy.pem ] || [ /ssl/key.pem -nt /ssl/haproxy.pem ]; then \
+			cat /ssl/cert.pem /ssl/key.pem > /ssl/haproxy.pem; \
+		fi' >/dev/null 2>&1
 	@echo "==> Unrestricted benchmarks"
 	@docker compose up -d >/dev/null 2>&1
 	@mkdir -p results
@@ -79,11 +84,22 @@ run-benchmarks:
 			python3 /app/summarize.py "/app/results/$$1$(SUFFIX)/$$4.json"; \
 			rm -f "$$tmp"; \
 		}; \
-		scenarios="nginx http://nginx:80/data.json \"\" http\nnginx https://nginx:443/data.json -insecure https\nnginx https://nginx:443/data.json \"-insecure -http2\" https_http2\ncaddy http://caddy:80/data.json \"\" http\ncaddy https://caddy:443/data.json -insecure https\ncaddy https://caddy:443/data.json \"-insecure -http2\" https_http2\ntraefik http://traefik:80/data.json \"\" http\ntraefik https://traefik:443/data.json -insecure https\ntraefik https://traefik:443/data.json \"-insecure -http2\" https_http2\nhaproxy http://haproxy:80/data.json \"\" http\nhaproxy https://haproxy:443/data.json -insecure https\nhaproxy https://haproxy:443/data.json \"-insecure -http2\" https_http2"; \
-		scenarios=$$(echo "$$scenarios" | shuf); \
-		while IFS= read -r line; do \
-			set -- $$line; \
-			bench "$$1" "$$2" "$$3" "$$4"; \
+		scenarios=$$(printf "%s\n" \
+			"nginx|http://nginx:80/data.json||http" \
+			"nginx|https://nginx:443/data.json|-insecure|https" \
+			"nginx|https://nginx:443/data.json|-insecure -http2|https_http2" \
+			"caddy|http://caddy:80/data.json||http" \
+			"caddy|https://caddy:443/data.json|-insecure|https" \
+			"caddy|https://caddy:443/data.json|-insecure -http2|https_http2" \
+			"traefik|http://traefik:80/data.json||http" \
+			"traefik|https://traefik:443/data.json|-insecure|https" \
+			"traefik|https://traefik:443/data.json|-insecure -http2|https_http2" \
+			"haproxy|http://haproxy:80/data.json||http" \
+			"haproxy|https://haproxy:443/data.json|-insecure|https" \
+			"haproxy|https://haproxy:443/data.json|-insecure -http2|https_http2" \
+			| shuf); \
+		while IFS="|" read -r proxy url opts scenario; do \
+			bench "$$proxy" "$$url" "$$opts" "$$scenario"; \
 		done <<< "$$scenarios"; \
 	'
 

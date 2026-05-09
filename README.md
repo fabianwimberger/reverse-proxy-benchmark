@@ -56,7 +56,9 @@ Vegeta → [Nginx|Caddy|Traefik|HAProxy] → Backend
 **Methodology:**
 - Attack Rate: Configurable (default 5,000 req/s)
 - Duration: Configurable (default 20s)
-- Connections: Configurable pool size (default 5)
+- Connections: Configurable pool size (default 64)
+- Warmup: 5s per proxy/protocol before measured runs
+- Run order: Shuffled to reduce fixed-order bias
 - Payload: ~20KB JSON file
 - Metrics: Throughput, latency percentiles (P50, P90, P95, P99), success rate
 
@@ -93,7 +95,7 @@ This helps identify efficiency under limited compute budgets.
 | Component | Location |
 |-----------|----------|
 | Proxy configs | `configs/{nginx,caddy,traefik,haproxy}/` |
-| Benchmark parameters | `Makefile` (RATE, DURATION, CONNECTIONS) |
+| Benchmark parameters | `Makefile` (RATE, DURATION, CONNECTIONS, WARMUP_DURATION) |
 | Analysis script | `analyze_results.py` |
 
 ## Requirements

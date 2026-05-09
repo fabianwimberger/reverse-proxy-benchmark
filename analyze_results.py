@@ -107,6 +107,7 @@ def parse_vegeta_json(filepath: str) -> dict[str, Any] | None:
         "rps": data.get("rate", 0),
         "throughput": data.get("throughput", 0),
         "requests": total_requests,
+        # Vegeta reports success as a 0..1 fraction; renderers convert to percent.
         "success": data.get("success", 0),
         "errors": error_count,
         "lat_mean": latencies.get("mean", 0) / 1e6,  # ns to ms
@@ -389,7 +390,7 @@ def create_scientific_chart(data: dict[str, dict[str, dict[str, Any]]]) -> None:
         0.5, 0.01, footer, ha="center", fontsize=8, color="#666666", style="italic"
     )
 
-    plt.tight_layout(rect=[0, 0.02, 1, 0.94])
+    plt.tight_layout(rect=(0, 0.02, 1, 0.94))
 
     chart_path = os.path.join(chart_dir, f"benchmark_{timestamp}.png")
     plt.savefig(chart_path, dpi=CHART_DPI, bbox_inches="tight", facecolor="white")
